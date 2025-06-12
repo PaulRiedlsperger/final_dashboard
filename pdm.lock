@@ -5,10 +5,21 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:03054f69dcbe13450ab8d9e2007319d8040c8c948ed60373edda0660561c0ce7"
+content_hash = "sha256:5a0614e5bafa2877496d2fc03ac15ba3f1ea419b023ce08306bd6fd5a921f961"
 
 [[metadata.targets]]
 requires_python = "==3.13.*"
+
+[[package]]
+name = "narwhals"
+version = "1.42.0"
+requires_python = ">=3.8"
+summary = "Extremely lightweight compatibility layer between dataframe libraries"
+groups = ["default"]
+files = [
+    {file = "narwhals-1.42.0-py3-none-any.whl", hash = "sha256:ef6cedf7700dc22c09d17973b9ede11b53e25331e238b24ac73884a8c5e27c19"},
+    {file = "narwhals-1.42.0.tar.gz", hash = "sha256:a5e554782446d1197593312651352cd39b2025e995053d8e6bdfaa01a70a91d3"},
+]
 
 [[package]]
 name = "numpy"
@@ -43,6 +54,17 @@ files = [
 ]
 
 [[package]]
+name = "packaging"
+version = "25.0"
+requires_python = ">=3.8"
+summary = "Core utilities for Python packages"
+groups = ["default"]
+files = [
+    {file = "packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484"},
+    {file = "packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f"},
+]
+
+[[package]]
 name = "pandas"
 version = "2.3.0"
 requires_python = ">=3.9"
@@ -71,6 +93,21 @@ files = [
     {file = "pandas-2.3.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:e1991bbb96f4050b09b5f811253c4f3cf05ee89a589379aa36cd623f21a31d6f"},
     {file = "pandas-2.3.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:bb3be958022198531eb7ec2008cfc78c5b1eed51af8600c6c5d9160d89d8d249"},
     {file = "pandas-2.3.0.tar.gz", hash = "sha256:34600ab34ebf1131a7613a260a61dbe8b62c188ec0ea4c296da7c9a06b004133"},
+]
+
+[[package]]
+name = "plotly"
+version = "6.1.2"
+requires_python = ">=3.8"
+summary = "An open-source interactive data visualization library for Python"
+groups = ["default"]
+dependencies = [
+    "narwhals>=1.15.1",
+    "packaging",
+]
+files = [
+    {file = "plotly-6.1.2-py3-none-any.whl", hash = "sha256:f1548a8ed9158d59e03d7fed548c7db5549f3130d9ae19293c8638c202648f6d"},
+    {file = "plotly-6.1.2.tar.gz", hash = "sha256:4fdaa228926ba3e3a213f4d1713287e69dcad1a7e66cf2025bd7d7026d5014b4"},
 ]
 
 [[package]]
