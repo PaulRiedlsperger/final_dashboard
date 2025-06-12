@@ -37,4 +37,41 @@
 		"date": "11.3.2023",
 		"result_link": "data/ekg_data/03_Ruhe.txt"
 	}]
+}, {
+	"id": 4,
+	"date_of_birth": 2001,
+	"firstname": "Paul",
+	"lastname": "Riedlsberger",
+	"gender" : "male",
+    "picture_path" : "data/pictures/Paul_Riedlsberger.jpg",
+	"ekg_tests": [{
+		"id": 5,
+		"date": "12.4.2023",
+		"result_link": "data/physiological_cycles.csv"
+	}]
+}, {
+	"id": 5,
+	"date_of_birth": 2001,
+	"firstname": "Simon",
+	"lastname": "Krainer",
+	"gender" : "male",
+    "picture_path" : "data/pictures/Simon_Krainer.jpg",
+	"ekg_tests": [{
+		"id": 6,
+		"date": "12.4.2023",
+		"result_link": "data/physiological_cycles.csv"
+	}]
+}, {
+	"id": 6,
+	"date_of_birth": 2006,
+	"firstname": "Lena",
+	"lastname": "Kurzthaler",
+	"gender" : "female",
+    "picture_path" : "data/pictures/Lena_Kurzthaler.jpg",
+	"ekg_tests": [{
+		"id": 7,
+		"date": "12.4.2023",
+		"result_link": "data/physiological_cycles.csv"
+	}]
 }]
+
