@@ -1,7 +1,8 @@
 import streamlit as st
 import json
 from person import Person
-
+from PIL import Image
+from loaddata import read_my_csv
 tab1 ,tab2 ,tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
 
 with tab1:
