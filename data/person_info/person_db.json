@@ -1,76 +1,36 @@
-[{
+{
 	"id": 1,
-	"date_of_birth": 1989,
-	"firstname": "Julian",
-	"lastname": "Huber",
-    "picture_path" : "data/pictures/tb.jpg",
-	"gender" : "male",
-	"ekg_tests": [{
-		"id": 1,
-		"date": "10.2.2023",
-		"result_link": "data/ekg_data/01_Ruhe.txt"}, {
-		"id": 2,
-		"date": "11.3.2023",
-		"result_link": "data/ekg_data/04_Belastung.txt"
-	}]
-}, {
-	"id": 2,
-	"date_of_birth": 1967,
-	"firstname": "Yannic",
-	"lastname": "Heyer",
-    "picture_path" : "data/pictures/js.jpg",
-	"gender" : "male",
-	"ekg_tests": [{
-		"id": 3,
-		"date": "10.2.2023",
-		"result_link": "data/ekg_data/02_Ruhe.txt"
-	}]
-}, {
-	"id": 3,
-	"date_of_birth": 1973,
-	"firstname": "Yunus",
-	"lastname": "Schmirander",
-	"gender" : "male",
-    "picture_path" : "data/pictures/bl.jpg",
-	"health_data": [{
-		"id": 4,
-		"date": "11.3.2023",
-		"result_link": "data/ekg_data/03_Ruhe.txt"
-	}]
-
-}, {
-	"id": 4,
 	"date_of_birth": 2001,
 	"firstname": "Paul",
 	"lastname": "Riedlsberger",
 	"gender" : "male",
     "picture_path" : "data/pictures/Paul_Riedlsperger.jpg",
 	"health_data": [{
-		"id": 5,
+		"id": 1.1,
 		"date": "12.4.2023",
 		"result_link": "data/physiological_cycles.csv"
 	}]
 }, {
-	"id": 5,
+	"id": 2,
 	"date_of_birth": 2001,
 	"firstname": "Simon",
 	"lastname": "Krainer",
 	"gender" : "male",
     "picture_path" : "data/pictures/Simon.jpg",
 	"health_data": [{
-		"id": 6,
+		"id": 2.1,
 		"date": "12.4.2023",
 		"result_link": "data/physiological_cycles.csv"
 	}]
 }, {
-	"id": 6,
+	"id": 3,
 	"date_of_birth": 2006,
 	"firstname": "Lena",
 	"lastname": "Kurzthaler",
 	"gender" : "female",
     "picture_path" : "data/pictures/Lena.jpg",
 	"health_data": [{
-		"id": 7,
+		"id": 3.1,
 		"date": "12.4.2023",
 		"result_link": "data/physiologische_zyklen_Lena.csv"
 	}]

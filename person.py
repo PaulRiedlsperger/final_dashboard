@@ -55,7 +55,8 @@ class Person:
         self.lastname = person_dict["lastname"]
         self.picture_path = person_dict["picture_path"]
         self.id = person_dict["id"]
-        self.healthdata_path = person_dict["result_link"]
+        self.healthdata_path = person_dict["health_data"][0]["result_link"]
+
 
 
 
