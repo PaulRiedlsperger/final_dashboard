@@ -32,7 +32,7 @@
 	"lastname": "Schmirander",
 	"gender" : "male",
     "picture_path" : "data/pictures/bl.jpg",
-	"ekg_tests": [{
+	"health_data": [{
 		"id": 4,
 		"date": "11.3.2023",
 		"result_link": "data/ekg_data/03_Ruhe.txt"
@@ -44,8 +44,8 @@
 	"firstname": "Paul",
 	"lastname": "Riedlsberger",
 	"gender" : "male",
-    "picture_path" : "data/pictures/Paul_Riedlsberger.jpg",
-	"ekg_tests": [{
+    "picture_path" : "data/pictures/Paul_Riedlsperger.jpg",
+	"health_data": [{
 		"id": 5,
 		"date": "12.4.2023",
 		"result_link": "data/physiological_cycles.csv"
@@ -56,8 +56,8 @@
 	"firstname": "Simon",
 	"lastname": "Krainer",
 	"gender" : "male",
-    "picture_path" : "data/pictures/Simon_Krainer.jpg",
-	"ekg_tests": [{
+    "picture_path" : "data/pictures/Simon.jpg",
+	"health_data": [{
 		"id": 6,
 		"date": "12.4.2023",
 		"result_link": "data/physiological_cycles.csv"
@@ -68,10 +68,10 @@
 	"firstname": "Lena",
 	"lastname": "Kurzthaler",
 	"gender" : "female",
-    "picture_path" : "data/pictures/Lena_Kurzthaler.jpg",
-	"ekg_tests": [{
+    "picture_path" : "data/pictures/Lena.jpg",
+	"health_data": [{
 		"id": 7,
 		"date": "12.4.2023",
-		"result_link": "data/physiological_cycles.csv"
+		"result_link": "data/physiologische_zyklen_Lena.csv"
 	}]
 }]

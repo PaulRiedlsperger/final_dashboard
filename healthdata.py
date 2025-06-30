@@ -29,7 +29,7 @@ class healthData:
     @staticmethod
     def plot_all(df):
 
-        # Erstellte einen Line Plot, der ersten 2000 Werte mit der Zeit aus der x-Achse
+        
         fig = px.line(df.head(2000), x= "time", y=["Resting heart rate (bpm)", "Heart rate variability (ms)", "Skin temp (celsius)", "Sleep performance %"],
             title="Healthdata over the time")
 
@@ -38,32 +38,31 @@ class healthData:
     @staticmethod
     def plot_RHR(df):
 
-        # Erstellte einen Line Plot, der ersten 2000 Werte mit der Zeit aus der x-Achse
-        fig = px.line(df.head(2000), x= "time", y=["Resting heart rate (bpm)"],
+        df_valid = df[["time", "Resting heart rate (bpm)"]].dropna()
+        fig = px.line(df_valid, x= "time", y="Resting heart rate (bpm)",
             title="Resting Heart Rate over the time")
         return fig
 
     @staticmethod
     def plot_HRV(df):
-
-        # Erstellte einen Line Plot, der ersten 2000 Werte mit der Zeit aus der x-Achse
-        fig = px.line(df.head(2000), x= "time", y=["Heart rate variability (ms)"],
+        df_valid = df[["time", "Heart rate variability (ms)"]].dropna()
+        fig = px.line(df_valid, x= "time", y="Heart rate variability (ms)",
             title="Heart Rate Variability over the time")
         return fig
 
+    
     @staticmethod
     def plot_skin_temp(df):
-
-        # Erstellte einen Line Plot, der ersten 2000 Werte mit der Zeit aus der x-Achse
-        fig = px.line(df.head(2000), x= "time", y=["skin temp (celsius)"],
-            title="Skin temperature over the time")
+        df_valid = df[["time", "Skin temp (celsius)"]].dropna()
+        fig = px.line(df_valid, x="time", y="Skin temp (celsius)",
+                  title="Skin temperature over the time")
         return fig
 
     @staticmethod
     def plot_sleep_performance(df):
 
-        # Erstellte einen Line Plot, der ersten 2000 Werte mit der Zeit aus der x-Achse
-        fig = px.line(df.head(2000), x= "time", y=["sleep performance %"],
+        df_valid = df[["time", "Sleep performance %"]].dropna()
+        fig = px.line(df_valid, x= "time", y="Sleep performance %",
             title="sleep performance over the time")
         return fig
 if __name__ == "__main__":
