@@ -65,6 +65,13 @@ class healthData:
         fig = px.line(df_valid, x= "time", y="Sleep performance %",
             title="sleep performance over the time")
         return fig
+    
+    @staticmethod
+    def get_latest_value(df, column):
+        df["time"] = pd.to_datetime(df["time"], errors='coerce')
+        latest_row = df.sort_values(by="time", ascending=False).iloc[0]
+        return latest_row[column]
+
 if __name__ == "__main__":
     df = read_my_csv()
     print("Durchschnittliche Ruheherzfrequenz:", healthData.get_average_Resting_heart_rate(df))
