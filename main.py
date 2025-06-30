@@ -26,7 +26,7 @@ with tab1:
 with tab2:
     st.header("📊 Gesundheitsdaten")
 
-    filepath = Person.healthdata_path
+    filepath = person.healthdata_path
     df = read_my_csv(filepath)
 
 
