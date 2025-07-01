@@ -1,37 +1,62 @@
-[{
-	"id": 1,
-	"date_of_birth": 2001,
-	"firstname": "Paul",
-	"lastname": "Riedlsberger",
-	"gender" : "male",
-    "picture_path" : "data/pictures/Paul_Riedlsperger.jpg",
-	"health_data": [{
-		"id": 1.1,
-		"date": "12.4.2023",
-		"result_link": "data/physiological_cycles.csv"
-	}]
-}, {
-	"id": 2,
-	"date_of_birth": 2001,
-	"firstname": "Simon",
-	"lastname": "Krainer",
-	"gender" : "male",
-    "picture_path" : "data/pictures/Simon.jpg",
-	"health_data": [{
-		"id": 2.1,
-		"date": "12.4.2023",
-		"result_link": "data/physiological_cycles.csv"
-	}]
-}, {
-	"id": 3,
-	"date_of_birth": 2006,
-	"firstname": "Lena",
-	"lastname": "Kurzthaler",
-	"gender" : "female",
-    "picture_path" : "data/pictures/Lena.jpg",
-	"health_data": [{
-		"id": 3.1,
-		"date": "12.4.2023",
-		"result_link": "data/physiologische_zyklen_Lena.csv"
-	}]
-}]
+[
+    {
+        "id": 1,
+        "date_of_birth": 2001,
+        "firstname": "Paul",
+        "lastname": "Riedlsberger",
+        "gender": "male",
+        "picture_path": "data/pictures/Paul_Riedlsperger.jpg",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "12.4.2023",
+                "result_link": "data/physiological_cycles.csv"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "date_of_birth": 2001,
+        "firstname": "Simon",
+        "lastname": "Krainer",
+        "gender": "male",
+        "picture_path": "data/pictures/Simon.jpg",
+        "health_data": [
+            {
+                "id": 2.1,
+                "date": "12.4.2023",
+                "result_link": "data/physiological_cycles.csv"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "date_of_birth": 2006,
+        "firstname": "Lena",
+        "lastname": "Kurzthaler",
+        "gender": "female",
+        "picture_path": "data/pictures/Lena.jpg",
+        "health_data": [
+            {
+                "id": 3.1,
+                "date": "12.4.2023",
+                "result_link": "data/physiologische_zyklen_Lena.csv"
+            }
+        ]
+    },
+    {
+        "date_of_birth": 2004,
+        "firstname": "jakob",
+        "lastname": "weninger",
+        "gender": "male",
+        "picture_path": "data/pictures/Scan_20200903 4_20250701_131710.png",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "1.1.2025",
+                "result_link": "data/physiological_cycles/physiological_cycles 1_20250701_131710.csv"
+            }
+        ],
+        "id": 4
+    }
+]
