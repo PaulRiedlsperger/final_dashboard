@@ -72,6 +72,9 @@ with tab3:
     from abnormality import AbnormalityChecker
     from loaddata import read_my_csv
     from abnormality import AbnormalityChecker, show_mini_chart
+    import streamlit as st
+    from loaddata import read_my_csv
+    from abnormality import analyze_abnormalities
 
     # CSV laden
     df = read_my_csv(person.healthdata_path)
@@ -96,37 +99,36 @@ with tab3:
     temp_warning = AbnormalityChecker.check_skin_temp(latest_temp, person.calculate_age(), person.gender)
     sleep_warning = AbnormalityChecker.check_sleep_score(latest_temp, person.calculate_age(), person.gender)
 
-    # Ausgabe
-    # RHR
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown(f"**💖 RHR:** {rhr_warning}")
-    with col2:
-        st.plotly_chart(show_mini_chart(current=latest_rhr, lower=lower_rhr, upper=upper_rhr, unit="bpm"), use_container_width=True)
 
-    # HRV
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown(f"**💕 HRV:** {hrv_warning}")
-    with col2:
-        st.plotly_chart(show_mini_chart(current=latest_hrv, lower=lower_hrv, upper=upper_hrv, unit="ms"), use_container_width=True)
 
-    # Temperatur
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown(f"**🌡️ Hauttemperatur:** {temp_warning}")
-    with col2:
-        st.plotly_chart(show_mini_chart(current=latest_temp, lower=lower_temp, upper=upper_temp, unit="°C"), use_container_width=True)
+    st.subheader("Abnormalitäten")
+    
+    if person is not None:
+        # CSV-Daten laden
+        df = read_my_csv(person.healthdata_path)
 
-    # Schlafscore
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown(f"**😴 Schlafscore:** {sleep_warning}")
-    with col2:
-        st.plotly_chart(show_mini_chart(current=latest_sleep, lower=lower_sleep, upper=upper_sleep, unit="%"), use_container_width=True)
+        # Analyse der Abnormalitäten durchführen
+        analysis_results = analyze_abnormalities(df, person)
+
+        # Ergebnisse für jeden Parameter darstellen
+        for result in analysis_results:
+            name = result["name"]
+            status = result["status"]
+            value = result["value"]
+            lower = result["lower"]
+            upper = result["upper"]
+            color = result["color"]
             
-    result_link = person.healthdata_path
-    df = read_my_csv(result_link)
-   
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.markdown(f"**{name}:** {status}")
+            with col2:
+                show_mini_chart(value, lower, upper, color, unit=result["unit"])
 
-        
+        # Optional: Gesamtauswertung oder Warnhinweis
+        critical = [r for r in analysis_results if "Zu hoch" in r["status"] or "Zu niedrig" in r["status"]]
+        if critical:
+            st.error("⚠️ Achtung: Abnormalitäten festgestellt!")
+        else:
+            st.success("✅ Alle Werte im Normbereich.")
+     
