@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+import streamlit as st
 
 
 class AbnormalityChecker:
@@ -110,3 +111,64 @@ def show_mini_chart(current, lower, upper, unit):
     )
 
     return fig
+
+
+def analyze_abnormalities(df, person):
+    age = person.calculate_age()
+    gender = person.gender
+
+    results = {}
+
+    parameters = {
+        "RHR": {
+            "column": "Resting heart rate (bpm)",
+            "check_func": AbnormalityChecker.check_rhr,
+            "threshold_func": AbnormalityChecker.get_rhr_thresholds,
+            "unit": "bpm"
+        },
+        "HRV": {
+            "column": "Heart rate variability (ms)",
+            "check_func": AbnormalityChecker.check_hrv,
+            "threshold_func": AbnormalityChecker.get_hrv_thresholds,
+            "unit": "ms"
+        },
+        "Hauttemperatur": {
+            "column": "Skin temp (celsius)",
+            "check_func": AbnormalityChecker.check_temp,
+            "threshold_func": AbnormalityChecker.get_temp_thresholds,
+            "unit": "°C"
+        },
+        "Schlafscore": {
+            "column": "Sleep performance %",
+            "check_func": AbnormalityChecker.check_sleep,
+            "threshold_func": AbnormalityChecker.get_sleep_thresholds,
+            "unit": "%"
+        }
+    }
+
+    for param_name, param in parameters.items():
+        values = df[param["column"]]
+        lower, upper = param["threshold_func"](age, gender)
+        abnormalities = ((values < lower) | (values > upper))
+
+        # Visualisierung
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df["time"], y=values, mode="lines", name="Wert"))
+        fig.add_trace(go.Scatter(x=df["time"][abnormalities], y=values[abnormalities],
+                                 mode="markers", name="Abnormalität", marker=dict(color="red", size=8)))
+        fig.add_hrect(y0=lower, y1=upper, fillcolor="green", opacity=0.2, line_width=0)
+        fig.update_layout(title=f"{param_name} über Zeit", yaxis_title=param["unit"])
+        st.plotly_chart(fig)
+
+        # Ergebnis zusammenfassen
+        n_abnormal = abnormalities.sum()
+        if n_abnormal == 0:
+            summary = "✅ Keine Abnormalitäten"
+        else:
+            summary = f"❗ {n_abnormal} Abnormalitäten erkannt"
+
+        results[param_name] = summary
+
+    # Farbcodierte Gesamtübersicht
+    for name, res in results.items():
+        st.markdown(f"**{name}:** {res}")

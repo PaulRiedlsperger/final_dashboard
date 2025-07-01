@@ -5,6 +5,7 @@ from PIL import Image
 from loaddata import read_my_csv
 from healthdata import healthData
 
+
 tab1 ,tab2 ,tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
 
 with tab1:
@@ -70,7 +71,7 @@ with tab2:
 with tab3:
     from abnormality import AbnormalityChecker
     from loaddata import read_my_csv
-    from abnormality import show_mini_chart
+    from abnormality import AbnormalityChecker, show_mini_chart
 
     # CSV laden
     df = read_my_csv(person.healthdata_path)
@@ -124,5 +125,8 @@ with tab3:
     with col2:
         st.plotly_chart(show_mini_chart(current=latest_sleep, lower=lower_sleep, upper=upper_sleep, unit="%"), use_container_width=True)
             
+    result_link = person.healthdata_path
+    df = read_my_csv(result_link)
+   
 
         
