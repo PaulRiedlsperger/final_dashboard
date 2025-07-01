@@ -281,4 +281,4 @@ with tab3:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
 
 
-plot_abnormalities_over_time(df)
+    plot_abnormalities_over_time(df)
