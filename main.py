@@ -19,6 +19,30 @@ from person import add_new_person_to_db, save_uploaded_file, delete_person_from_
 # Set page config (optional, aber gut für Layout)
 st.set_page_config(layout="wide")
 
+# Benutzerdefiniertes CSS für komplett schwarzen Hintergrund
+st.markdown("""
+    <style>
+        html, body, .stApp {
+            background-color: #000000;
+            color: white;
+        }
+        .stMarkdown, .stText, .stDataFrame, .css-1r6slb0, .css-1v0mbdj, .st-bz, .st-cq {
+            color: white !important;
+        }
+        .stButton>button, .stSelectbox, .stNumberInput, .stFileUploader, .stTextInput {
+            background-color: #222222;
+            color: white;
+        }
+        .css-18e3th9 {
+            background-color: #000000;
+        }
+        .block-container {
+            background-color: #000000;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+
 # Initialisiere session_state, falls nicht vorhanden
 if 'add_person_mode' not in st.session_state:
     st.session_state.add_person_mode = False
@@ -260,7 +284,7 @@ with tab2:
 
 
 
-    with tab3:
+with tab3:
         st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
         if "selected_person_id" in st.session_state:
