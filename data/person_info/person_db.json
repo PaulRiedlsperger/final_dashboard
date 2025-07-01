@@ -58,5 +58,20 @@
             }
         ],
         "id": 4
+    },
+    {
+        "date_of_birth": 1997,
+        "firstname": "sepp",
+        "lastname": "Holzer",
+        "gender": "other",
+        "picture_path": "data/pictures/RC_Schaltung_20250701_133032.png",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "1.1.2025",
+                "result_link": "data/physiological_cycles/physiologische_zyklen_Lena_20250701_133032.csv"
+            }
+        ],
+        "id": 5
     }
 ]
