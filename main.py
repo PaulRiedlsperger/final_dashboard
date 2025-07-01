@@ -1,7 +1,6 @@
-
 import streamlit as st
 import json
-from person import Person
+from person import Person # Stelle sicher, dass Person-Klasse importiert ist
 from PIL import Image
 from loaddata import read_my_csv
 from healthdata import healthData
@@ -10,6 +9,10 @@ import pandas as pd # Für das Speichern der CSV-Datei
 from abnormality import AbnormalityChecker
 import plotly.graph_objects as go
 from abnormality import plot_abnormalities_over_time
+from datetime import datetime # <-- DIESE ZEILE HINZUFÜGEN!
+
+# WICHTIG: Importiere die neue Löschfunktion aus person.py
+from person import add_new_person_to_db, save_uploaded_file, delete_person_from_db
 
 # Set page config (optional, aber gut für Layout)
 st.set_page_config(layout="wide")
@@ -17,18 +20,28 @@ st.set_page_config(layout="wide")
 # Initialisiere session_state, falls nicht vorhanden
 if 'add_person_mode' not in st.session_state:
     st.session_state.add_person_mode = False
+if 'confirm_delete_id' not in st.session_state: # Zustand für Löschbestätigung
+    st.session_state.confirm_delete_id = None # Speichert die ID der Person, die zum Löschen ansteht
 
-tab1 ,tab2 ,tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
+tab1, tab2, tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
 
 with tab1:
     st.header("Versuchsperson")
 
     # ----- UI für das Hinzufügen einer neuen Person -----
-    # Der Button und das Formular werden immer am Anfang des Tabs angezeigt,
-    # aber das Formular nur, wenn st.session_state.add_person_mode True ist.
-    if st.button("Neue Person hinzufügen", key="add_new_person_btn"):
-        # Setze den Modus zum Hinzufügen, wenn der Button geklickt wird
-        st.session_state.add_person_mode = True
+    col_add_btn, col_back_btn = st.columns([0.2, 0.8])
+
+    with col_add_btn:
+        if st.button("Neue Person hinzufügen", key="add_new_person_btn"):
+            st.session_state.add_person_mode = True
+            st.session_state.confirm_delete_id = None # Löschbestätigung zurücksetzen
+            st.rerun() # Wichtig, um den Zustand sofort zu aktualisieren
+
+    with col_back_btn:
+        if st.session_state.add_person_mode:
+            if st.button("Zurück", key="back_from_add_person"):
+                st.session_state.add_person_mode = False
+                st.rerun()
 
     if st.session_state.add_person_mode:
         st.subheader("Neue Personendaten eingeben")
@@ -38,7 +51,7 @@ with tab1:
             new_birth_year = st.number_input("Geburtsjahr*", min_value=1900, max_value=2025, value=2000, step=1, key="new_birth_year")
             new_gender = st.selectbox("Geschlecht*", ["male", "female", "other"], key="new_gender")
 
-            st.markdown("---") # Trennlinie
+            st.markdown("---")
 
             st.write("### 🖼️ Profilbild hochladen (optional)")
             uploaded_picture = st.file_uploader("Profilbild hochladen (Drag & Drop möglich)", type=["png", "jpg", "jpeg"], key="new_person_picture")
@@ -50,25 +63,13 @@ with tab1:
             submit_button = st.form_submit_button("Person speichern")
 
             if submit_button:
-                # Prüfen, ob alle Pflichtfelder ausgefüllt sind (CSV ist jetzt Pflicht)
                 if new_firstname and new_lastname and new_birth_year and new_gender and uploaded_csv:
-                    # Hier wird die neue Logik zum Speichern aufgerufen
-                    # Diese Funktionen werden wir in den nächsten Schritten erstellen
                     try:
-                        # Zuerst ein potenzielles Bild und die CSV speichern
-                        # Dann die Person zur JSON hinzufügen
-                        # Wir übergeben uploaded_picture und uploaded_csv direkt
-
-                        # Importiere die neue Funktion aus person.py, die wir noch erstellen müssen
-                        from person import add_new_person_to_db, save_uploaded_file
-
-                        # Speichere das Profilbild und erhalte den Pfad (falls hochgeladen)
                         picture_path = None
                         if uploaded_picture is not None:
-                            picture_path = save_uploaded_file(uploaded_picture, "pictures") # Speichern in 'data/pictures/'
+                            picture_path = save_uploaded_file(uploaded_picture, "pictures")
 
-                        # Speichere die CSV-Datei
-                        csv_path = save_uploaded_file(uploaded_csv, "physiological_cycles") # Speichern in 'data/physiological_cycles/'
+                        csv_path = save_uploaded_file(uploaded_csv, "physiological_cycles")
 
                         if csv_path:
                             new_person_data = {
@@ -76,61 +77,101 @@ with tab1:
                                 "firstname": new_firstname,
                                 "lastname": new_lastname,
                                 "gender": new_gender,
-                                "picture_path": picture_path, # Pfad des gespeicherten Bildes
+                                "picture_path": picture_path,
                                 "health_data": [
                                     {
-                                        "id": 1.1, # Oder eine logische ID für die Gesundheitsdaten (kannst du anpassen)
-                                        "date": "1.1.2025", # Beispiel-Datum, idealerweise das Upload-Datum oder Datum aus CSV
-                                        "result_link": csv_path # Pfad der gespeicherten CSV
+                                        "id": 1.1,
+                                        "date": datetime.now().strftime("%d.%m.%Y"), # Verwende aktuelles Datum
+                                        "result_link": csv_path
                                     }
                                 ]
                             }
-                            # Füge die Person zur JSON-Datenbank hinzu
                             add_new_person_to_db(new_person_data)
 
                             st.success(f"Person '{new_firstname} {new_lastname}' erfolgreich hinzugefügt und Daten gespeichert!")
-                            st.session_state.add_person_mode = False # Formular schließen
-                            st.rerun() # App neu laden, damit die neue Person in der Auswahl erscheint
+                            st.session_state.add_person_mode = False
+                            st.rerun()
                         else:
                             st.error("Fehler beim Speichern der physiologischen Daten.")
 
                     except Exception as e:
                         st.error(f"Ein Fehler ist aufgetreten: {e}")
-                        st.session_state.add_person_mode = True # Formular offen lassen bei Fehler
+                        st.session_state.add_person_mode = True
 
                 else:
                     st.error("Bitte füllen Sie alle mit * markierten Felder aus und laden Sie die CSV-Datei hoch.")
-        st.markdown("---") # Trennlinie nach dem Formular
-    # ----- Ende UI für das Hinzufügen einer neuen Person -----
+        st.markdown("---")
 
 
     # ----- UI für die Anzeige bestehender Personen -----
-    # Dieser Block wird nur ausgeführt, wenn der Add-Person-Modus NICHT aktiv ist,
-    # oder nachdem eine Person hinzugefügt und st.rerun() aufgerufen wurde.
     if not st.session_state.add_person_mode:
-        person_list = Person.load_person_data() # Lädt alle Personen aus der JSON (inkl. neuer Personen)
+        person_list = Person.load_person_data()
         person_ids = [p["id"] for p in person_list]
 
         if person_ids:
-            # Sortiere die IDs, um die höchste ID als Standardwert zu wählen, wenn eine neue Person hinzugefügt wurde
             person_ids.sort()
-            default_id = person_ids[-1] if 'newly_added_id' not in st.session_state else st.session_state.newly_added_id
-            if default_id not in person_ids: # Fallback falls die ID nicht mehr existiert
-                default_id = person_ids[-1]
+            if 'selected_person_id' not in st.session_state or st.session_state.selected_person_id not in person_ids:
+                st.session_state.selected_person_id = person_ids[-1]
 
-            selected_id = st.number_input(
-                "Versuchsperson-ID auswählen",
-                min_value=min(person_ids),
-                max_value=max(person_ids),
-                value=default_id, # Setze Standardwert auf die höchste ID oder die neu hinzugefügte
-                step=1,
-                key="selected_person_id"
-            )
+            col_select_id, col_delete_btn = st.columns([0.7, 0.3])
 
-            selected_person_data = next((p for p in person_list if p["id"] == selected_id), None)
+            with col_select_id:
+                selected_id_input = st.number_input(
+                    "Versuchsperson-ID auswählen",
+                    min_value=min(person_ids),
+                    max_value=max(person_ids),
+                    value=st.session_state.selected_person_id,
+                    step=1,
+                    key="selected_person_id_selector"
+                )
+                if selected_id_input != st.session_state.selected_person_id:
+                    st.session_state.selected_person_id = selected_id_input
+                    st.session_state.confirm_delete_id = None
+                    st.rerun()
+
+            with col_delete_btn:
+                st.write("")
+                st.write("")
+                if st.button("Person löschen", key="trigger_delete_btn", help="Löscht die aktuell ausgewählte Person und ihre Daten."):
+                    st.session_state.confirm_delete_id = st.session_state.selected_person_id
+                    st.rerun()
+
+            # Löschbestätigungslogik
+            if st.session_state.confirm_delete_id is not None and st.session_state.confirm_delete_id == st.session_state.selected_person_id:
+                st.warning(f"Möchten Sie Person mit ID {st.session_state.confirm_delete_id} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")
+                col_confirm_yes, col_confirm_no = st.columns(2)
+                with col_confirm_yes:
+                    if st.button("Ja, Person löschen", key="confirm_delete_yes"):
+                        try:
+                            delete_person_from_db(st.session_state.confirm_delete_id)
+                            st.success(f"Person mit ID {st.session_state.confirm_delete_id} wurde erfolgreich gelöscht.")
+                            st.session_state.confirm_delete_id = None
+
+                            person_list_after_delete = Person.load_person_data()
+                            if person_list_after_delete:
+                                st.session_state.selected_person_id = person_list_after_delete[0]["id"]
+                            else:
+                                if 'selected_person_id' in st.session_state:
+                                    del st.session_state.selected_person_id
+                            st.rerun()
+
+                        except ValueError as ve:
+                            st.error(f"Fehler: {ve}")
+                            st.session_state.confirm_delete_id = None
+                        except Exception as e:
+                            st.error(f"Ein unerwarteter Fehler ist aufgetreten: {e}")
+                            st.session_state.confirm_delete_id = None
+
+                with col_confirm_no:
+                    if st.button("Abbrechen", key="confirm_delete_no"):
+                        st.session_state.confirm_delete_id = None
+                        st.info("Löschvorgang abgebrochen.")
+                        st.rerun()
+
+
+            selected_person_data = next((p for p in person_list if p["id"] == st.session_state.selected_person_id), None)
 
             if selected_person_data:
-                # Hier der vorhandene Code zur Anzeige der Personendaten
                 st.subheader("Persönliche Daten")
                 col_img, col_info = st.columns([1, 2])
 
@@ -138,13 +179,6 @@ with tab1:
                     image_path = selected_person_data.get("picture_path")
                     if image_path:
                         try:
-                            # Streamlit Warnung unterdrücken, da wir use_container_width verwenden
-                            # Die Meldung "The use_column_width parameter has been deprecated" kam,
-                            # weil Streamlit Änderungen an der Bildanzeige vornimmt.
-                            # use_container_width ist der empfohlene Ersatz, aber deine aktuelle Version
-                            # verwendet noch use_column_width.
-                            # Wenn du eine neuere Streamlit-Version hast, könntest du es ändern.
-                            # Für jetzt, lassen wir es wie es ist, da es nur eine Warnung ist.
                             image = Image.open(image_path)
                             st.image(image, caption=f"Bild von {selected_person_data['firstname']}", use_column_width=True)
                         except FileNotFoundError:
@@ -156,9 +190,7 @@ with tab1:
                     else:
                         st.image("https://via.placeholder.com/150", caption="Kein Bild verfügbar", use_column_width=True)
 
-
                 with col_info:
-                    # Direkte Verwendung der Person-Klasse hier beibehalten oder wie vorher
                     person_obj = Person(selected_person_data)
                     age = person_obj.calculate_age()
 
@@ -169,55 +201,57 @@ with tab1:
                     st.markdown(f"**📅 Geburtsjahr:** {person_obj.date_of_birth}")
 
             else:
-                st.warning("Keine Person mit dieser ID gefunden.")
+                st.info("Keine Person ausgewählt oder keine Personen verfügbar. Bitte fügen Sie eine neue Person hinzu.")
         else:
             st.info("Noch keine Personen vorhanden. Bitte fügen Sie eine neue Person hinzu.")
 
-# Der Rest der Tabs bleibt unverändert, da sie von der Auswahl in Tab1 abhängen
-# Stellen Sie sicher, dass 'person' (oder 'person_obj') in den folgenden Tabs definiert ist,
-# wenn eine Person ausgewählt wurde.
 
 with tab2:
-    from healthdata import healthData # Dies importiert die Klasse HealthData (angenommen, deine Klasse heißt so)
+    from healthdata import healthData
     st.header("📊 Gesundheitsdaten")
-    if 'selected_person_data' in locals() and selected_person_data: # Prüfen, ob Person ausgewählt ist
-        health_data_info = selected_person_data.get("health_data")
-        if health_data_info and health_data_info[0].get("result_link"):
-            csv_file_path = health_data_info[0]["result_link"]
-            try:
-                df = read_my_csv(csv_file_path)
+    if "selected_person_id" in st.session_state:
+        person_list_tab2 = Person.load_person_data()
+        selected_person_data_tab2 = next(
+            (p for p in person_list_tab2 if p["id"] == st.session_state.selected_person_id), None
+        )
 
-                # Durchschnittswerte berechnen
-                avg_rhr = healthData.get_average_Resting_heart_rate(df)
-                avg_hrv = healthData.get_average_Heart_rate_variability(df)
-                avg_temp = healthData.get_average_Skin_temp_celsius(df)
-                avg_sleep = healthData.get_average_Sleep_performance_percent(df)
+        if selected_person_data_tab2:
+            health_data_info = selected_person_data_tab2.get("health_data")
+            if health_data_info and health_data_info[0].get("result_link"):
+                csv_file_path = health_data_info[0]["result_link"]
+                try:
+                    df = read_my_csv(csv_file_path)
 
-                # Darstellung in 2 Spalten
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("🫀 Ruheherzfrequenz (bpm)", f"{avg_rhr:.1f}")
-                    st.metric("🌡️ Hauttemperatur (°C)", f"{avg_temp:.1f}")
-                with col2:
-                    st.metric("💓 Herzfrequenz-Variabilität (ms)", f"{avg_hrv:.1f}")
-                    st.metric("😴 Schlafscore (%)", f"{avg_sleep:.1f}")
+                    avg_rhr = healthData.get_average_Resting_heart_rate(df)
+                    avg_hrv = healthData.get_average_Heart_rate_variability(df)
+                    avg_temp = healthData.get_average_Skin_temp_celsius(df)
+                    avg_sleep = healthData.get_average_Sleep_performance_percent(df)
 
-                st.divider()
-                st.subheader("📈 Verlauf der Gesundheitswerte")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("🫀 Ruheherzfrequenz (bpm)", f"{avg_rhr:.1f}")
+                        st.metric("🌡️ Hauttemperatur (°C)", f"{avg_temp:.1f}")
+                    with col2:
+                        st.metric("💓 Herzfrequenz-Variabilität (ms)", f"{avg_hrv:.1f}")
+                        st.metric("😴 Schlafscore (%)", f"{avg_sleep:.1f}")
 
-                # Mehrere Plots anzeigen
-                st.plotly_chart(healthData.plot_RHR(df), use_container_width=True)
-                st.plotly_chart(healthData.plot_HRV(df), use_container_width=True)
-                st.plotly_chart(healthData.plot_skin_temp(df), use_container_width=True)
-                st.plotly_chart(healthData.plot_sleep_performance(df), use_container_width=True)
-            except FileNotFoundError:
-                st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {csv_file_path}")
-            except KeyError as e:
-                st.error(f"Fehlende Spalte in der Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen.")
-            except Exception as e:
-                st.error(f"Fehler beim Laden oder Verarbeiten der Gesundheitsdaten: {e}")
+                    st.divider()
+                    st.subheader("📈 Verlauf der Gesundheitswerte")
+
+                    st.plotly_chart(healthData.plot_RHR(df), use_container_width=True)
+                    st.plotly_chart(healthData.plot_HRV(df), use_container_width=True)
+                    st.plotly_chart(healthData.plot_skin_temp(df), use_container_width=True)
+                    st.plotly_chart(healthData.plot_sleep_performance(df), use_container_width=True)
+                except FileNotFoundError:
+                    st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {csv_file_path}")
+                except KeyError as e:
+                    st.error(f"Fehlende Spalte in der Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen.")
+                except Exception as e:
+                    st.error(f"Fehler beim Laden oder Verarbeiten der Gesundheitsdaten: {e}")
+            else:
+                st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
         else:
-            st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
+            st.info("Keine Person mit dieser ID gefunden, oder Daten unvollständig.")
     else:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
 
@@ -226,59 +260,52 @@ with tab3:
     st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
     if "selected_person_id" in st.session_state:
-        person_list = Person.load_person_data()
-        selected_person_data = next(
-            (p for p in person_list if p["id"] == st.session_state.selected_person_id), None
+        person_list_tab3 = Person.load_person_data()
+        selected_person_data_tab3 = next(
+            (p for p in person_list_tab3 if p["id"] == st.session_state.selected_person_id), None
         )
 
-        if selected_person_data:
-            person_obj = Person(selected_person_data)
-            df = read_my_csv(person_obj.healthdata_path)  # Nutzung der bereits vorhandenen Funktion
-            age = person_obj.calculate_age()
-            gender = person_obj.gender
+        if selected_person_data_tab3:
+            person_obj = Person(selected_person_data_tab3)
+            if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
+                df = read_my_csv(person_obj.healthdata_path)
+                age = person_obj.calculate_age()
+                gender = person_obj.gender
 
-            if df is not None and not df.empty:
-                # --- Spalten robust umbenennen ---
-                rename_cols = {
-                    "Resting heart rate (bpm)": "RHR",
-                    "Heart rate variability (ms)": "HRV",
-                    "Skin temp (celsius)": "Temp",
-                    "Sleep performance %": "Sleep"
-                }
+                if df is not None and not df.empty:
+                    rename_cols = {
+                        "Resting heart rate (bpm)": "RHR",
+                        "Heart rate variability (ms)": "HRV",
+                        "Skin temp (celsius)": "Temp",
+                        "Sleep performance %": "Sleep"
+                    }
 
-                df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
+                    df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
 
-                # --- Prüfen, ob alle erwarteten Spalten vorhanden sind ---
-                expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
-                missing = [col for col in expected_columns if col not in df.columns]
+                    expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
+                    missing = [col for col in expected_columns if col not in df.columns]
 
-                if missing:
-                    st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
-                    st.stop()
+                    if missing:
+                        st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
+                        df = pd.DataFrame()
+                    else:
+                        for param, check_func in {
+                            "RHR": AbnormalityChecker.check_rhr,
+                            "HRV": AbnormalityChecker.check_hrv,
+                            "Temp": AbnormalityChecker.check_skin_temp,
+                            "Sleep": AbnormalityChecker.check_sleep_score
+                        }.items():
+                            df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
 
-                # --- Abnormalitäten analysieren ---
-                for param, check_func in {
-                    "RHR": AbnormalityChecker.check_rhr,
-                    "HRV": AbnormalityChecker.check_hrv,
-                    "Temp": AbnormalityChecker.check_skin_temp,
-                    "Sleep": AbnormalityChecker.check_sleep_score
-                }.items():
-                    df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
+                        st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
+                        st.dataframe(df)
+                        plot_abnormalities_over_time(df)
 
-                # --- Visualisierung vorbereiten ---
-                st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
-
-                # Falls du Plots verwenden willst, kann hier `plotly` oder `matplotlib` eingebaut werden
-                # z. B. über visualize_health.py oder direkt in diesem Block
-                # Optional: exportiere df als CSV-Vorschau oder Tabelle
-                st.dataframe(df)
-
+                else:
+                    st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
             else:
-                st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
+                st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
         else:
             st.warning("Keine gültige Person mit dieser ID gefunden.")
     else:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
-
-
-    plot_abnormalities_over_time(df)

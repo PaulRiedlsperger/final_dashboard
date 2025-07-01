@@ -1,0 +1,17 @@
+[
+    {
+        "date_of_birth": 2004,
+        "firstname": "jakob",
+        "lastname": "weninger",
+        "gender": "male",
+        "picture_path": "data\\pictures\\Scan_20200903 (4).png",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "01.07.2025",
+                "result_link": "data\\physiological_cycles\\physiological_cycles (2)_2.csv"
+            }
+        ],
+        "id": 1
+    }
+]
