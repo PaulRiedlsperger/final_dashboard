@@ -13,5 +13,35 @@
             }
         ],
         "id": 1
+    },
+    {
+        "date_of_birth": 2001,
+        "firstname": "Paul ",
+        "lastname": "Riedlsperger",
+        "gender": "male",
+        "picture_path": "data\\pictures\\Paul Riedlsperger.jpg",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "01.07.2025",
+                "result_link": "data\\physiological_cycles\\physiological_cycles.csv"
+            }
+        ],
+        "id": 2
+    },
+    {
+        "date_of_birth": 2006,
+        "firstname": "Lena",
+        "lastname": "Kurzthaler",
+        "gender": "female",
+        "picture_path": "data\\pictures\\Lena_1.jpg",
+        "health_data": [
+            {
+                "id": 1.1,
+                "date": "01.07.2025",
+                "result_link": "data\\physiological_cycles\\physiologische_zyklen_Lena.csv"
+            }
+        ],
+        "id": 3
     }
 ]

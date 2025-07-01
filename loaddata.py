@@ -27,6 +27,29 @@ def read_my_csv(filepath):
     return df
 
 
+def read_my_csv_2(filepath):
+    """
+    Liest eine CSV-Datei mit physiologischen Daten ein und gibt einen bereinigten DataFrame zurück.
+    """
+    df = pd.read_csv(filepath)
+
+    # Umbenennen der Spalten für einfacheren Zugriff
+    df.rename(columns={
+        "Cycle end time": "datetime",
+        "Resting heart rate (bpm)": "RHR",
+        "Heart rate variability (ms)": "HRV",
+        "Skin temp (celsius)": "Temp",
+        "Sleep performance %": "Sleep"
+    }, inplace=True)
+
+    # Zeitstempel als datetime interpretieren
+    df["datetime"] = pd.to_datetime(df["datetime"], errors='coerce')
+
+    # Relevante Spalten auswählen
+    df2 = df[["datetime", "RHR", "HRV", "Temp", "Sleep"]]
+
+    return df2
+
 
 
    

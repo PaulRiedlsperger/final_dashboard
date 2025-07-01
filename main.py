@@ -10,6 +10,8 @@ from abnormality import AbnormalityChecker
 import plotly.graph_objects as go
 from abnormality import plot_abnormalities_over_time
 from datetime import datetime # <-- DIESE ZEILE HINZUFÜGEN!
+from loaddata import read_my_csv_2
+
 
 # WICHTIG: Importiere die neue Löschfunktion aus person.py
 from person import add_new_person_to_db, save_uploaded_file, delete_person_from_db
@@ -256,56 +258,64 @@ with tab2:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
 
 
-with tab3:
-    st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
-    if "selected_person_id" in st.session_state:
-        person_list_tab3 = Person.load_person_data()
-        selected_person_data_tab3 = next(
-            (p for p in person_list_tab3 if p["id"] == st.session_state.selected_person_id), None
-        )
 
-        if selected_person_data_tab3:
-            person_obj = Person(selected_person_data_tab3)
-            if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
-                df = read_my_csv(person_obj.healthdata_path)
-                age = person_obj.calculate_age()
-                gender = person_obj.gender
+    with tab3:
+        st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
-                if df is not None and not df.empty:
-                    rename_cols = {
-                        "Resting heart rate (bpm)": "RHR",
-                        "Heart rate variability (ms)": "HRV",
-                        "Skin temp (celsius)": "Temp",
-                        "Sleep performance %": "Sleep"
-                    }
+        if "selected_person_id" in st.session_state:
+            person_list_tab3 = Person.load_person_data()
+            selected_person_data_tab3 = next(
+                (p for p in person_list_tab3 if p["id"] == st.session_state.selected_person_id), None
+            )
 
-                    df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
+            if selected_person_data_tab3:
+                person_obj = Person(selected_person_data_tab3)
+                if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
+                    df = read_my_csv_2(person_obj.healthdata_path)
 
-                    expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
-                    missing = [col for col in expected_columns if col not in df.columns]
+                    # 🛠️ Fix: datetime-Spalte korrekt parsen
+                    if "datetime" in df.columns:
+                        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+                        df.dropna(subset=["datetime"], inplace=True)
 
-                    if missing:
-                        st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
-                        df = pd.DataFrame()
+                    age = person_obj.calculate_age()
+                    gender = person_obj.gender
+
+                    if df is not None and not df.empty:
+                        rename_cols = {
+                            "Resting heart rate (bpm)": "RHR",
+                            "Heart rate variability (ms)": "HRV",
+                            "Skin temp (celsius)": "Temp",
+                            "Sleep performance %": "Sleep"
+                        }
+
+                        df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
+
+                        expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
+                        missing = [col for col in expected_columns if col not in df.columns]
+
+                        if missing:
+                            st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
+                            df = pd.DataFrame()
+                        else:
+                            for param, check_func in {
+                                "RHR": AbnormalityChecker.check_rhr,
+                                "HRV": AbnormalityChecker.check_hrv,
+                                "Temp": AbnormalityChecker.check_skin_temp,
+                                "Sleep": AbnormalityChecker.check_sleep_score
+                            }.items():
+                                df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
+
+                            st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
+                            st.dataframe(df)
+                            plot_abnormalities_over_time(df)
+
                     else:
-                        for param, check_func in {
-                            "RHR": AbnormalityChecker.check_rhr,
-                            "HRV": AbnormalityChecker.check_hrv,
-                            "Temp": AbnormalityChecker.check_skin_temp,
-                            "Sleep": AbnormalityChecker.check_sleep_score
-                        }.items():
-                            df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
-
-                        st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
-                        st.dataframe(df)
-                        plot_abnormalities_over_time(df)
-
+                        st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
                 else:
-                    st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
+                    st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
             else:
-                st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
+                st.warning("Keine gültige Person mit dieser ID gefunden.")
         else:
-            st.warning("Keine gültige Person mit dieser ID gefunden.")
-    else:
-        st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
+            st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
