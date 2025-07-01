@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 import os # Neu importiert für Dateisystemoperationen
 import shutil # Neu importiert, falls wir später Dateien kopieren/verschieben müssen (aktuell nur für os.path.join)
+from loaddata import read_my_csv
 
 # --- Konfigurationspfade ---
 # Pfad zur JSON-Datenbank (Anpassung, falls nötig, aber "data/person_info/person_db.json" ist typisch)
@@ -99,7 +100,14 @@ class Person:
                 return eintrag
         return None # Wenn keine Person mit der ID gefunden wurde
 
-
+    def get_health_dataframe(self):
+        """
+        Lädt die Gesundheitsdaten dieser Person als DataFrame.
+        """
+        if self.healthdata_path:
+            return read_my_csv(self.healthdata_path)
+        else:
+            return None
 # --- NEUE HILFSFUNKTIONEN ZUM HINZUFÜGEN VON PERSONEN UND SPEICHERN VON DATEIEN ---
 
 def get_next_person_id():

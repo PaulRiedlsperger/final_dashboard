@@ -70,105 +70,42 @@ class AbnormalityChecker:
         return 70, 85
 
 
-
-
+import streamlit as st
 import plotly.graph_objects as go
 
-def show_mini_chart(current, lower, upper, unit):
-    fig = go.Figure()
-
-    fig.add_trace(go.Bar(
-    x=["Wert"],
-    y=[upper - lower],
-    base=lower,
-    width=0.4,
-    name="Normalbereich",
-    marker_color='lightgreen',
-    orientation='v',
-    showlegend=True
-))
-
-    fig.add_trace(go.Scatter(
-        x=["Wert"],  # NICHT x=[""]
-        y=[current],
-        mode='markers',
-        marker=dict(
-            color='blue',
-            size=12,
-            line=dict(color='black', width=1)
-        ),
-        name="Aktueller Wert",
-        showlegend=True
-    ))
-
-    fig.update_layout(
-        height=120,
-        margin=dict(l=0, r=0, t=0, b=0),
-        yaxis=dict(
-            title=unit,
-            range=[lower - 10, upper + 10]  # Puffer für Punktanzeige
-        ),
-    )
-
-    return fig
-
-
-def analyze_abnormalities(df, person):
-    age = person.calculate_age()
-    gender = person.gender
-
-    results = {}
-
-    parameters = {
-        "RHR": {
-            "column": "Resting heart rate (bpm)",
-            "check_func": AbnormalityChecker.check_rhr,
-            "threshold_func": AbnormalityChecker.get_rhr_thresholds,
-            "unit": "bpm"
-        },
-        "HRV": {
-            "column": "Heart rate variability (ms)",
-            "check_func": AbnormalityChecker.check_hrv,
-            "threshold_func": AbnormalityChecker.get_hrv_thresholds,
-            "unit": "ms"
-        },
-        "Hauttemperatur": {
-            "column": "Skin temp (celsius)",
-            "check_func": AbnormalityChecker.check_temp,
-            "threshold_func": AbnormalityChecker.get_temp_thresholds,
-            "unit": "°C"
-        },
-        "Schlafscore": {
-            "column": "Sleep performance %",
-            "check_func": AbnormalityChecker.check_sleep,
-            "threshold_func": AbnormalityChecker.get_sleep_thresholds,
-            "unit": "%"
-        }
+def plot_abnormalities_over_time(df):
+    """
+    Plottet die vier Gesundheitsparameter (RHR, HRV, Temp, Sleep) über die Zeit mit Statusanzeige.
+    """
+    color_map = {
+        "Normal": "green",
+        "Zu hoch": "red",
+        "Zu niedrig": "orange",
+        "Gut": "blue",
+        "Schlafqualität gering": "darkred",
+        "Mittelmäßig": "gold"
     }
 
-    for param_name, param in parameters.items():
-        values = df[param["column"]]
-        lower, upper = param["threshold_func"](age, gender)
-        abnormalities = ((values < lower) | (values > upper))
+    st.subheader("📈 Verlauf der Gesundheitsparameter mit Statusanzeige")
 
-        # Visualisierung
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df["time"], y=values, mode="lines", name="Wert"))
-        fig.add_trace(go.Scatter(x=df["time"][abnormalities], y=values[abnormalities],
-                                 mode="markers", name="Abnormalität", marker=dict(color="red", size=8)))
-        fig.add_hrect(y0=lower, y1=upper, fillcolor="green", opacity=0.2, line_width=0)
-        fig.update_layout(title=f"{param_name} über Zeit", yaxis_title=param["unit"])
-        st.plotly_chart(fig)
+    for param in ["RHR", "HRV", "Temp", "Sleep"]:
+        status_col = param + "_status"
+        if param in df.columns and status_col in df.columns:
+            st.markdown(f"**{param} über die Zeit**")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df["time"],
+                y=df[param],
+                mode="lines+markers",
+                marker=dict(color=[color_map.get(status, "grey") for status in df[status_col]]),
+                text=df[status_col],
+                name=param
+            ))
+            fig.update_layout(
+                xaxis_title="Zeit",
+                yaxis_title=param,
+                height=300
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-        # Ergebnis zusammenfassen
-        n_abnormal = abnormalities.sum()
-        if n_abnormal == 0:
-            summary = "✅ Keine Abnormalitäten"
-        else:
-            summary = f"❗ {n_abnormal} Abnormalitäten erkannt"
 
-        results[param_name] = summary
-
-    # Farbcodierte Gesamtübersicht
-    for name, res in results.items():
-        st.markdown(f"**{name}:** {res}")

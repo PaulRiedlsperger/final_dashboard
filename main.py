@@ -7,6 +7,9 @@ from loaddata import read_my_csv
 from healthdata import healthData
 import os # Importieren für Dateisystemoperationen
 import pandas as pd # Für das Speichern der CSV-Datei
+from abnormality import AbnormalityChecker
+import plotly.graph_objects as go
+from abnormality import plot_abnormalities_over_time
 
 # Set page config (optional, aber gut für Layout)
 st.set_page_config(layout="wide")
@@ -220,74 +223,62 @@ with tab2:
 
 
 with tab3:
-    st.header("⚠ Abnormalitäten")
-    if 'selected_person_data' in locals() and selected_person_data:
-        # Importe hier, um Ladezeit zu optimieren, wenn Tab nicht aktiv ist
-        from abnormality import AbnormalityChecker, show_mini_chart
+    st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
-        health_data_info = selected_person_data.get("health_data")
-        if health_data_info and health_data_info[0].get("result_link"):
-            csv_file_path = health_data_info[0]["result_link"]
-            try:
-                df = read_my_csv(csv_file_path)
-                person_obj = Person(selected_person_data) # Neu initialisieren, um sicherzustellen
-                age = person_obj.calculate_age()
-                gender = person_obj.gender
+    if "selected_person_id" in st.session_state:
+        person_list = Person.load_person_data()
+        selected_person_data = next(
+            (p for p in person_list if p["id"] == st.session_state.selected_person_id), None
+        )
 
-                # Letzte Werte extrahieren
-                latest_rhr = healthData.get_latest_value(df, "Resting heart rate (bpm)")
-                latest_hrv = healthData.get_latest_value(df, "Heart rate variability (ms)")
-                latest_temp = healthData.get_latest_value(df, "Skin temp (celsius)")
-                latest_sleep = healthData.get_latest_value(df, "Sleep performance %")
+        if selected_person_data:
+            person_obj = Person(selected_person_data)
+            df = read_my_csv(person_obj.healthdata_path)  # Nutzung der bereits vorhandenen Funktion
+            age = person_obj.calculate_age()
+            gender = person_obj.gender
 
-                # Dynamische Grenzwerte aus der Klasse holen
-                lower_rhr, upper_rhr = AbnormalityChecker.get_rhr_thresholds(age, gender)
-                lower_hrv, upper_hrv = AbnormalityChecker.get_hrv_thresholds(age, gender)
-                lower_temp, upper_temp = AbnormalityChecker.get_skin_temp_thresholds(gender)
-                lower_sleep, upper_sleep = AbnormalityChecker.get_sleep_score_thresholds()
+            if df is not None and not df.empty:
+                # --- Spalten robust umbenennen ---
+                rename_cols = {
+                    "Resting heart rate (bpm)": "RHR",
+                    "Heart rate variability (ms)": "HRV",
+                    "Skin temp (celsius)": "Temp",
+                    "Sleep performance %": "Sleep"
+                }
 
-                # Analyse
-                rhr_warning = AbnormalityChecker.check_rhr(latest_rhr, age, gender)
-                hrv_warning = AbnormalityChecker.check_hrv(latest_hrv, age, gender)
-                temp_warning = AbnormalityChecker.check_skin_temp(latest_temp, age, gender)
-                sleep_warning = AbnormalityChecker.check_sleep_score(latest_sleep, age, gender) # Achtung: hier war latest_temp statt latest_sleep!
+                df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
 
-                # Ausgabe
-                # RHR
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**💖 RHR:** {rhr_warning}")
-                with col2:
-                    st.plotly_chart(show_mini_chart(current=latest_rhr, lower=lower_rhr, upper=upper_rhr, unit="bpm"), use_container_width=True)
+                # --- Prüfen, ob alle erwarteten Spalten vorhanden sind ---
+                expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
+                missing = [col for col in expected_columns if col not in df.columns]
 
-                # HRV
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**💕 HRV:** {hrv_warning}")
-                with col2:
-                    st.plotly_chart(show_mini_chart(current=latest_hrv, lower=lower_hrv, upper=upper_hrv, unit="ms"), use_container_width=True)
+                if missing:
+                    st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
+                    st.stop()
 
-                # Temperatur
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**🌡️ Hauttemperatur:** {temp_warning}")
-                with col2:
-                    st.plotly_chart(show_mini_chart(current=latest_temp, lower=lower_temp, upper=upper_temp, unit="°C"), use_container_width=True)
+                # --- Abnormalitäten analysieren ---
+                for param, check_func in {
+                    "RHR": AbnormalityChecker.check_rhr,
+                    "HRV": AbnormalityChecker.check_hrv,
+                    "Temp": AbnormalityChecker.check_skin_temp,
+                    "Sleep": AbnormalityChecker.check_sleep_score
+                }.items():
+                    df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
 
-                # Schlafscore
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**😴 Schlafscore:** {sleep_warning}")
-                with col2:
-                    st.plotly_chart(show_mini_chart(current=latest_sleep, lower=lower_sleep, upper=upper_sleep, unit="%"), use_container_width=True)
+                # --- Visualisierung vorbereiten ---
+                st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
 
-            except FileNotFoundError:
-                st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {csv_file_path}")
-            except KeyError as e:
-                st.error(f"Fehlende Spalte in der Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen.")
-            except Exception as e:
-                st.error(f"Fehler beim Laden oder Verarbeiten der Abnormalitätsdaten: {e}")
+                # Falls du Plots verwenden willst, kann hier `plotly` oder `matplotlib` eingebaut werden
+                # z. B. über visualize_health.py oder direkt in diesem Block
+                # Optional: exportiere df als CSV-Vorschau oder Tabelle
+                st.dataframe(df)
+
+            else:
+                st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
         else:
-            st.info("Für diese Person sind keine Gesundheitsdaten verknüpft, um Abnormalitäten zu prüfen.")
+            st.warning("Keine gültige Person mit dieser ID gefunden.")
     else:
-        st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
+        st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
+
+
+plot_abnormalities_over_time(df)
