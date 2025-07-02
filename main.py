@@ -2,15 +2,13 @@ import streamlit as st
 import json
 from person import Person # Stelle sicher, dass Person-Klasse importiert ist
 from PIL import Image
-from loaddata import read_my_csv
+from loaddata import read_my_csv, read_my_csv_2 # read_my_csv_2 hinzugefügt
 from healthdata import healthData
 import os # Importieren für Dateisystemoperationen
 import pandas as pd # Für das Speichern der CSV-Datei
-from abnormality import AbnormalityChecker
+from abnormality import AbnormalityChecker, plot_abnormalities_over_time # plot_abnormalities_over_time importieren
+from datetime import datetime # DIESE ZEILE BLEIBT
 import plotly.graph_objects as go
-from abnormality import plot_abnormalities_over_time
-from datetime import datetime # <-- DIESE ZEILE HINZUFÜGEN!
-from loaddata import read_my_csv_2
 
 
 # WICHTIG: Importiere die neue Löschfunktion aus person.py
@@ -32,12 +30,34 @@ st.markdown("""
         .stButton>button, .stSelectbox, .stNumberInput, .stFileUploader, .stTextInput {
             background-color: #222222;
             color: white;
+            border: 1px solid #444444; /* Optional: fügt einen leichten Rand hinzu */
         }
-        .css-18e3th9 {
-            background-color: #000000;
+        /* Verbessert die Sichtbarkeit von Text in Text Inputs */
+        .stTextInput>div>div>input {
+            color: white !important;
         }
-        .block-container {
-            background-color: #000000;
+        /* Verbessert die Sichtbarkeit von Optionen in Selectboxes */
+        .stSelectbox>div>div>div {
+            color: white !important;
+        }
+        /* Allgemeiner Text in Labels etc. */
+        label, .css-1fv8s86 {
+            color: white !important;
+        }
+        /* Anpassung für Tab-Header */
+        .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+            font-size: 1.2rem; /* Größere Schrift */
+            color: white; /* Weiße Schrift für Tabs */
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 24px; /* Abstand zwischen Tabs */
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #333333; /* Hintergrund für ausgewählten Tab */
+            border-radius: 5px; /* Abgerundete Ecken für ausgewählten Tab */
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #AAAAAA; /* Farbe für nicht ausgewählte Tabs */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -48,6 +68,13 @@ if 'add_person_mode' not in st.session_state:
     st.session_state.add_person_mode = False
 if 'confirm_delete_id' not in st.session_state: # Zustand für Löschbestätigung
     st.session_state.confirm_delete_id = None # Speichert die ID der Person, die zum Löschen ansteht
+if 'show_recommendations' not in st.session_state: # Zustand für Empfehlungsanzeige
+    st.session_state.show_recommendations = False
+if 'current_recommendations' not in st.session_state: # Speichert die generierten Empfehlungen
+    st.session_state.current_recommendations = []
+if 'analyzed_df' not in st.session_state: # Speichert das analysierte DataFrame für Abnormalitäten
+    st.session_state.analyzed_df = None
+
 
 tab1, tab2, tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
 
@@ -61,6 +88,9 @@ with tab1:
         if st.button("Neue Person hinzufügen", key="add_new_person_btn"):
             st.session_state.add_person_mode = True
             st.session_state.confirm_delete_id = None # Löschbestätigung zurücksetzen
+            st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
+            st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
+            st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
             st.rerun() # Wichtig, um den Zustand sofort zu aktualisieren
 
     with col_back_btn:
@@ -74,7 +104,8 @@ with tab1:
         with st.form("new_person_form", clear_on_submit=True):
             new_firstname = st.text_input("Vorname*", key="new_firstname")
             new_lastname = st.text_input("Nachname*", key="new_lastname")
-            new_birth_year = st.number_input("Geburtsjahr*", min_value=1900, max_value=2025, value=2000, step=1, key="new_birth_year")
+            # Max-Wert auf aktuelles Jahr setzen
+            new_birth_year = st.number_input("Geburtsjahr*", min_value=1900, max_value=datetime.now().year, value=2000, step=1, key="new_birth_year")
             new_gender = st.selectbox("Geschlecht*", ["male", "female", "other"], key="new_gender")
 
             st.markdown("---")
@@ -106,7 +137,7 @@ with tab1:
                                 "picture_path": picture_path,
                                 "health_data": [
                                     {
-                                        "id": 1.1,
+                                        "id": 1.1, # Diese ID ist statisch, sollte aber dynamisch sein (z.B. Zeitstempel oder Zähler)
                                         "date": datetime.now().strftime("%d.%m.%Y"), # Verwende aktuelles Datum
                                         "result_link": csv_path
                                     }
@@ -117,7 +148,7 @@ with tab1:
                             st.success(f"Person '{new_firstname} {new_lastname}' erfolgreich hinzugefügt und Daten gespeichert!")
                             st.session_state.add_person_mode = False
                             st.rerun()
-                        else:
+                        else: # Dies ist der else-Block, der den Fehler verursachen könnte, wenn er nicht richtig eingerückt ist
                             st.error("Fehler beim Speichern der physiologischen Daten.")
 
                     except Exception as e:
@@ -153,6 +184,9 @@ with tab1:
                 if selected_id_input != st.session_state.selected_person_id:
                     st.session_state.selected_person_id = selected_id_input
                     st.session_state.confirm_delete_id = None
+                    st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
+                    st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
+                    st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
                     st.rerun()
 
             with col_delete_btn:
@@ -172,6 +206,9 @@ with tab1:
                             delete_person_from_db(st.session_state.confirm_delete_id)
                             st.success(f"Person mit ID {st.session_state.confirm_delete_id} wurde erfolgreich gelöscht.")
                             st.session_state.confirm_delete_id = None
+                            st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
+                            st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
+                            st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
 
                             person_list_after_delete = Person.load_person_data()
                             if person_list_after_delete:
@@ -246,7 +283,19 @@ with tab2:
             if health_data_info and health_data_info[0].get("result_link"):
                 csv_file_path = health_data_info[0]["result_link"]
                 try:
+                    # Hier read_my_csv verwenden, da es um allgemeine Gesundheitsdaten geht
                     df = read_my_csv(csv_file_path)
+
+                    # Spaltennamen anpassen, falls sie anders sind als in der ursprünglichen CSV
+                    # Dies ist eine Annahme basierend auf vorherigen Kontexten.
+                    # Wenn deine CSV direkt die richtigen Spaltennamen hat, kann dies entfallen.
+                    df.rename(columns={
+                        "resting heart rate (bpm)": "RHR",
+                        "heart rate variability (ms)": "HRV",
+                        "skin temp (celsius)": "Temp",
+                        "sleep performance %": "Sleep"
+                    }, inplace=True)
+
 
                     avg_rhr = healthData.get_average_Resting_heart_rate(df)
                     avg_hrv = healthData.get_average_Heart_rate_variability(df)
@@ -282,36 +331,44 @@ with tab2:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
 
 
-
-
 with tab3:
-        st.header("⚠️ Abnormalitäten über den Zeitverlauf")
+    st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
-        if "selected_person_id" in st.session_state:
-            person_list_tab3 = Person.load_person_data()
-            selected_person_data_tab3 = next(
-                (p for p in person_list_tab3 if p["id"] == st.session_state.selected_person_id), None
-            )
+    if "selected_person_id" in st.session_state:
+        person_list_tab3 = Person.load_person_data()
+        selected_person_data_tab3 = next(
+            (p for p in person_list_tab3 if p["id"] == st.session_state.selected_person_id), None
+        )
 
-            if selected_person_data_tab3:
-                person_obj = Person(selected_person_data_tab3)
-                if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
+        if selected_person_data_tab3:
+            person_obj = Person(selected_person_data_tab3)
+
+            if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
+                try:
+                    # Lade das DataFrame mit read_my_csv_2
                     df = read_my_csv_2(person_obj.healthdata_path)
 
-                    # 🛠️ Fix: datetime-Spalte korrekt parsen
-                    if "datetime" in df.columns:
-                        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+                    # Überprüfen und Konvertieren der 'datetime'-Spalte
+                    if "time" in df.columns and "datetime" not in df.columns:
+                        df["datetime"] = pd.to_datetime(df["time"], errors="coerce")
                         df.dropna(subset=["datetime"], inplace=True)
+                    elif "datetime" in df.columns:
+                         df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+                         df.dropna(subset=["datetime"], inplace=True)
+                    else:
+                        st.error("Fehler: Weder 'time' noch 'datetime' Spalte im CSV gefunden. Kann Zeitverlauf nicht analysieren.")
+                        df = pd.DataFrame() # Leeres DataFrame, um weitere Fehler zu vermeiden
+
 
                     age = person_obj.calculate_age()
                     gender = person_obj.gender
 
                     if df is not None and not df.empty:
                         rename_cols = {
-                            "Resting heart rate (bpm)": "RHR",
-                            "Heart rate variability (ms)": "HRV",
-                            "Skin temp (celsius)": "Temp",
-                            "Sleep performance %": "Sleep"
+                            "resting heart rate (bpm)": "RHR",
+                            "heart rate variability (ms)": "HRV",
+                            "skin temp (celsius)": "Temp",
+                            "sleep performance %": "Sleep"
                         }
 
                         df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
@@ -320,9 +377,10 @@ with tab3:
                         missing = [col for col in expected_columns if col not in df.columns]
 
                         if missing:
-                            st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten: {', '.join(missing)}")
-                            df = pd.DataFrame()
+                            st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten für Abnormalitäten: {', '.join(missing)}. Bitte überprüfen Sie die Spaltennamen in der hochgeladenen CSV.")
+                            st.session_state.analyzed_df = pd.DataFrame() # Leeres DataFrame setzen
                         else:
+                            # Füge Statusspalten hinzu
                             for param, check_func in {
                                 "RHR": AbnormalityChecker.check_rhr,
                                 "HRV": AbnormalityChecker.check_hrv,
@@ -332,14 +390,42 @@ with tab3:
                                 df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
 
                             st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
-                            st.dataframe(df)
+                            st.dataframe(df) # Zeigt das DataFrame mit den Statusspalten
+
+                            # Plotting der Abnormalitäten über die Zeit
                             plot_abnormalities_over_time(df)
 
+                            # Speichere das analysierte DF im Session State für Empfehlungen
+                            st.session_state.analyzed_df = df
+
+                            st.markdown("---")
+                            st.subheader("💡 Deine personalisierten Empfehlungen")
+
+                            if st.button("Empfehlungen anzeigen", key="show_recommendations_btn"):
+                                with st.spinner("Analysiere Daten und generiere Empfehlungen..."):
+                                    # Analysiere und generiere Empfehlungen basierend auf dem aktuellen df
+                                    st.session_state.current_recommendations = AbnormalityChecker.analyze_and_recommend(st.session_state.analyzed_df)
+                                    st.session_state.show_recommendations = True
+                                    # st.rerun() # Kein rerun hier, da der Expander den Inhalt dynamisch anzeigt
+
+                            if st.session_state.show_recommendations:
+                                with st.expander("Klicken Sie hier, um Ihre Empfehlungen zu sehen", expanded=True):
+                                    if st.session_state.current_recommendations:
+                                        for emoji, rec_text in st.session_state.current_recommendations:
+                                            st.markdown(f"**{emoji} {rec_text}**")
+                                    else:
+                                        st.info("Es konnten keine spezifischen Empfehlungen generiert werden.")
                     else:
                         st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
-                else:
-                    st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
+                except FileNotFoundError:
+                    st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {person_obj.healthdata_path}")
+                except KeyError as e:
+                    st.error(f"Fehlende Spalte oder ungültiges Format in den Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen und das Format.")
+                except Exception as e:
+                    st.error(f"Fehler beim Laden oder Verarbeiten der Gesundheitsdaten für Abnormalitäten: {e}")
             else:
-                st.warning("Keine gültige Person mit dieser ID gefunden.")
+                st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
         else:
-            st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
+            st.warning("Keine gültige Person mit dieser ID gefunden.")
+    else:
+        st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
