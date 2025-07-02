@@ -48,7 +48,7 @@ with tab1:
             st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
             st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
             st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
-            st.rerun() # Wichtig, um den Zustand sofort zu aktualisieren
+            st.rerun() # Wichtig, um den Zustand sofort zu aktual
 
     with col_back_btn:
         if st.session_state.add_person_mode:
@@ -200,15 +200,15 @@ with tab1:
                     if image_path:
                         try:
                             image = Image.open(image_path)
-                            st.image(image, caption=f"Bild von {selected_person_data['firstname']}", use_column_width=True)
+                            st.image(image, caption=f"Bild von {selected_person_data['firstname']}", use_container_width=True)
                         except FileNotFoundError:
                             st.warning(f"Bild nicht gefunden unter: {image_path}")
-                            st.image("https://via.placeholder.com/150", caption="Platzhalterbild", use_column_width=True)
+                            st.image("https://via.placeholder.com/150", caption="Platzhalterbild", use_container_width=True)
                         except Exception as e:
                             st.error(f"Fehler beim Laden des Bildes: {e}")
-                            st.image("https://via.placeholder.com/150", caption="Fehler beim Bildladen", use_column_width=True)
+                            st.image("https://via.placeholder.com/150", caption="Fehler beim Bildladen", use_container_width=True)
                     else:
-                        st.image("https://via.placeholder.com/150", caption="Kein Bild verfügbar", use_column_width=True)
+                        st.image("https://via.placeholder.com/150", caption="Kein Bild verfügbar", use_container_width=True)
 
                 with col_info:
                     person_obj = Person(selected_person_data)
@@ -310,8 +310,8 @@ with tab3:
                         df["datetime"] = pd.to_datetime(df["time"], errors="coerce")
                         df.dropna(subset=["datetime"], inplace=True)
                     elif "datetime" in df.columns:
-                         df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
-                         df.dropna(subset=["datetime"], inplace=True)
+                        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
+                        df.dropna(subset=["datetime"], inplace=True)
                     else:
                         st.error("Fehler: Weder 'time' noch 'datetime' Spalte im CSV gefunden. Kann Zeitverlauf nicht analysieren.")
                         df = pd.DataFrame() # Leeres DataFrame, um weitere Fehler zu vermeiden
