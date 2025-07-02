@@ -8,27 +8,28 @@ class AbnormalityChecker:
     # Define normal ranges based on the provided table
     # Structure: {age_group: {gender: {param: (min, max)}}}
     NORMAL_RANGES = {
-        (18, 29): {
-            "male": {"RHR": (50, 65), "HRV": (45, 100), "Temp": (32.0, 34.0)},
-            "female": {"RHR": (55, 70), "HRV": (55, 110), "Temp": (32.5, 34.5)}
-        },
-        (30, 39): {
-            "male": {"RHR": (50, 65), "HRV": (40, 95), "Temp": (32.0, 34.0)},
-            "female": {"RHR": (50, 70), "HRV": (50, 100), "Temp": (32.5, 34.5)}
-        },
-        (40, 49): {
-            "male": {"RHR": (50, 70), "HRV": (35, 85), "Temp": (32.0, 34.0)},
-            "female": {"RHR": (55, 75), "HRV": (45, 95), "Temp": (32.5, 34.5)}
-        },
-        (50, 59): {
-            "male": {"RHR": (55, 75), "HRV": (30, 80), "Temp": (32.0, 34.0)},
-            "female": {"RHR": (60, 80), "HRV": (40, 90), "Temp": (32.5, 34.5)}
-        },
-        (60, 150): { # Assuming 150 as a practical upper limit for age 60+
-            "male": {"RHR": (55, 80), "HRV": (25, 70), "Temp": (32.0, 34.0)},
-            "female": {"RHR": (60, 85), "HRV": (35, 80), "Temp": (32.5, 34.5)}
-        }
+    (18, 29): {
+        "male": {"RHR": (40, 55), "HRV": (80, 180), "Temp": (31.8, 36)},
+        "female": {"RHR": (45, 60), "HRV": (85, 175), "Temp": (32.2, 36.5)}
+    },
+    (30, 39): {
+        "male": {"RHR": (42, 56), "HRV": (75, 155), "Temp": (31.8, 36)},
+        "female": {"RHR": (47, 62), "HRV": (80, 145), "Temp": (32.2, 36.5)}
+    },
+    (40, 49): {
+        "male": {"RHR": (44, 58), "HRV": (70, 110), "Temp": (31.8, 36)},
+        "female": {"RHR": (48, 64), "HRV": (75, 120), "Temp": (32.2, 36.5)}
+    },
+    (50, 59): {
+        "male": {"RHR": (46, 60), "HRV": (65, 105), "Temp": (31.8, 36)},
+        "female": {"RHR": (50, 66), "HRV": (70, 115), "Temp": (32.2, 36.5)}
+    },
+    (60, 150): {
+        "male": {"RHR": (48, 65), "HRV": (60, 100), "Temp": (31.8, 36)},
+        "female": {"RHR": (52, 68), "HRV": (65, 110), "Temp": (32.2, 36.5)}
     }
+}
+
     # Sleep performance is general, not age/gender specific, let's assume a general healthy range
     SLEEP_PERFORMANCE_THRESHOLD_GOOD = 85
     SLEEP_PERFORMANCE_THRESHOLD_MEDIUM = 70
