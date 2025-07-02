@@ -11,8 +11,8 @@ from datetime import datetime # DIESE ZEILE BLEIBT
 import plotly.graph_objects as go
 
 
-# WICHTIG: Importiere die neue Löschfunktion aus person.py
-from person import add_new_person_to_db, save_uploaded_file, delete_person_from_db
+# WICHTIG: Importiere die neuen/aktualisierten Funktionen aus person.py
+from person import add_new_person_to_db, save_uploaded_file, delete_person_from_db, update_person_in_db # update_person_in_db hinzugefügt
 
 # Set page config (optional, aber gut für Layout)
 st.set_page_config(layout="wide")
@@ -21,6 +21,8 @@ st.set_page_config(layout="wide")
 # Initialisiere session_state, falls nicht vorhanden
 if 'add_person_mode' not in st.session_state:
     st.session_state.add_person_mode = False
+if 'edit_person_mode' not in st.session_state: # NEU: Zustand für Bearbeitungsmodus
+    st.session_state.edit_person_mode = False
 if 'confirm_delete_id' not in st.session_state: # Zustand für Löschbestätigung
     st.session_state.confirm_delete_id = None # Speichert die ID der Person, die zum Löschen ansteht
 if 'show_recommendations' not in st.session_state: # Zustand für Empfehlungsanzeige
@@ -35,30 +37,43 @@ tab1, tab2, tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalität
 with tab1:
     st.header("Versuchsperson")
 
-    # ----- UI für das Hinzufügen einer neuen Person -----
-    col_add_btn, col_back_btn = st.columns([0.2, 0.8])
+    # Buttons für Hinzufügen, Bearbeiten, Zurück
+    col_add_btn, col_edit_btn, col_back_btn = st.columns([0.2, 0.2, 0.6])
 
     with col_add_btn:
         if st.button("Neue Person hinzufügen", key="add_new_person_btn"):
             st.session_state.add_person_mode = True
-            st.session_state.confirm_delete_id = None # Löschbestätigung zurücksetzen
-            st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
-            st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-            st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
-            st.rerun() # Wichtig, um den Zustand sofort zu aktual
+            st.session_state.edit_person_mode = False # Wichtig: Bearbeitungsmodus deaktivieren
+            st.session_state.confirm_delete_id = None
+            st.session_state.show_recommendations = False
+            st.session_state.current_recommendations = []
+            st.session_state.analyzed_df = pd.DataFrame()
+            st.rerun()
+
+    with col_edit_btn: # NEU: Bearbeiten-Button
+        if st.button("Person bearbeiten", key="edit_person_btn"):
+            st.session_state.edit_person_mode = True
+            st.session_state.add_person_mode = False # Wichtig: Hinzufügemodus deaktivieren
+            st.session_state.confirm_delete_id = None
+            st.session_state.show_recommendations = False
+            st.session_state.current_recommendations = []
+            st.session_state.analyzed_df = pd.DataFrame()
+            st.rerun()
 
     with col_back_btn:
-        if st.session_state.add_person_mode:
-            if st.button("Zurück", key="back_from_add_person"):
+        # "Zurück"-Button, sichtbar wenn im Hinzufüge- oder Bearbeitungsmodus
+        if st.session_state.add_person_mode or st.session_state.edit_person_mode:
+            if st.button("Zurück", key="back_from_add_edit"):
                 st.session_state.add_person_mode = False
+                st.session_state.edit_person_mode = False
                 st.rerun()
 
+    # Logik für das Hinzufügen einer neuen Person
     if st.session_state.add_person_mode:
         st.subheader("Neue Personendaten eingeben")
         with st.form("new_person_form", clear_on_submit=True):
             new_firstname = st.text_input("Vorname*", key="new_firstname")
             new_lastname = st.text_input("Nachname*", key="new_lastname")
-            # Max-Wert auf aktuelles Jahr setzen
             new_birth_year = st.number_input("Geburtsjahr*", min_value=1900, max_value=datetime.now().year, value=2000, step=1, key="new_birth_year")
             new_gender = st.selectbox("Geschlecht*", ["male", "female", "other"], key="new_gender")
 
@@ -113,9 +128,116 @@ with tab1:
                     st.error("Bitte füllen Sie alle mit * markierten Felder aus und laden Sie die CSV-Datei hoch.")
         st.markdown("---")
 
+    # Logik für das Bearbeiten einer bestehenden Person (NEU hinzugefügt)
+    elif st.session_state.edit_person_mode:
+        st.subheader("Bestehende Person bearbeiten")
+        person_list_for_edit = Person.load_person_data()
+        person_ids_for_edit = [p["id"] for p in person_list_for_edit]
 
-    # ----- UI für die Anzeige bestehender Personen -----
-    if not st.session_state.add_person_mode:
+        if not person_ids_for_edit:
+            st.info("Es sind keine Personen zum Bearbeiten vorhanden. Bitte fügen Sie zuerst eine Person hinzu.")
+            # Füge einen "Zurück"-Button hinzu, wenn keine Personen vorhanden sind
+            if st.button("Zurück", key="back_from_no_edit_person"):
+                st.session_state.edit_person_mode = False
+                st.rerun()
+        else:
+            # Stelle sicher, dass immer eine Person ausgewählt ist, wenn der Bearbeitungsmodus aktiv ist
+            if 'selected_person_id_edit' not in st.session_state or st.session_state.selected_person_id_edit not in person_ids_for_edit:
+                st.session_state.selected_person_id_edit = person_ids_for_edit[0] # Wähle die erste Person aus
+
+            selected_id_edit = st.selectbox(
+                "Person zur Bearbeitung auswählen (ID)",
+                options=person_ids_for_edit,
+                index=person_ids_for_edit.index(st.session_state.selected_person_id_edit),
+                key="selected_person_id_edit_selector"
+            )
+            st.session_state.selected_person_id_edit = selected_id_edit # Aktualisiere den Zustand bei Auswahländerung
+
+            selected_person_data_edit = next((p for p in person_list_for_edit if p["id"] == selected_id_edit), None)
+
+            if selected_person_data_edit:
+                with st.form("edit_person_form", clear_on_submit=False):
+                    # Vorab ausfüllen mit bestehenden Daten
+                    edit_firstname = st.text_input("Vorname*", value=selected_person_data_edit.get("firstname", ""), key="edit_firstname")
+                    edit_lastname = st.text_input("Nachname*", value=selected_person_data_edit.get("lastname", ""), key="edit_lastname")
+                    edit_birth_year = st.number_input("Geburtsjahr*", min_value=1900, max_value=datetime.now().year, value=selected_person_data_edit.get("date_of_birth", 2000), step=1, key="edit_birth_year")
+                    edit_gender = st.selectbox("Geschlecht*", ["male", "female", "other"], index=["male", "female", "other"].index(selected_person_data_edit.get("gender", "male")), key="edit_gender")
+
+                    st.markdown("---")
+
+                    st.write("### 🖼️ Profilbild aktualisieren (optional)")
+                    current_picture_path = selected_person_data_edit.get("picture_path")
+                    if current_picture_path and os.path.exists(current_picture_path):
+                        try:
+                            st.image(Image.open(current_picture_path), caption="Aktuelles Profilbild", width=150)
+                        except Exception:
+                            st.write("Aktuelles Bild konnte nicht angezeigt werden.")
+                    else:
+                        st.write("Kein aktuelles Profilbild vorhanden.")
+                    uploaded_picture_edit = st.file_uploader("Neues Profilbild hochladen (lässt altes Bild ersetzen)", type=["png", "jpg", "jpeg"], key="edit_person_picture")
+
+                    st.write("### 📈 Physiologische Daten aktualisieren (CSV-Upload)*")
+                    st.info("Bitte laden Sie eine CSV-Datei hoch, die folgende Spalten enthält: 'time', 'resting heart rate (bpm)', 'heart rate variability (ms)', 'skin temp (celsius)', 'sleep performance %'")
+                    
+                    # Suche den aktuellen CSV-Pfad aus der health_data Liste
+                    current_health_data_list = selected_person_data_edit.get("health_data", [])
+                    current_csv_path = current_health_data_list[0].get("result_link") if current_health_data_list else None
+
+                    if current_csv_path and os.path.exists(current_csv_path):
+                        st.write(f"Aktuelle CSV-Datei: `{os.path.basename(current_csv_path)}`")
+                    else:
+                        st.write("Keine aktuelle CSV-Datei für physiologische Daten vorhanden.")
+
+                    uploaded_csv_edit = st.file_uploader("Neue Physiologische Daten hochladen (lässt alte CSV ersetzen)", type=["csv"], key="edit_person_csv")
+
+                    update_button = st.form_submit_button("Änderungen speichern")
+
+                    if update_button:
+                        if edit_firstname and edit_lastname and edit_birth_year and edit_gender:
+                            try:
+                                # Pfad für Profilbild aktualisieren
+                                new_picture_path = save_uploaded_file(uploaded_picture_edit, "pictures", existing_path=current_picture_path)
+                                
+                                # Pfad für CSV aktualisieren
+                                new_csv_path = None
+                                if uploaded_csv_edit:
+                                    new_csv_path = save_uploaded_file(uploaded_csv_edit, "physiological_cycles", existing_path=current_csv_path)
+                                else:
+                                    # Wenn keine neue CSV hochgeladen wird, behalte den alten Pfad
+                                    new_csv_path = current_csv_path
+
+
+                                updated_data = {
+                                    "id": selected_id_edit,
+                                    "date_of_birth": edit_birth_year,
+                                    "firstname": edit_firstname,
+                                    "lastname": edit_lastname,
+                                    "gender": edit_gender,
+                                    "picture_path": new_picture_path, # save_uploaded_file gibt den korrekten Pfad zurück (neuer oder alter)
+                                    "health_data": [
+                                        {
+                                            "id": 1.1, # Bleibt statisch oder kann dynamisch verwaltet werden
+                                            "date": datetime.now().strftime("%d.%m.%Y"),
+                                            "result_link": new_csv_path
+                                        }
+                                    ]
+                                }
+                                update_person_in_db(updated_data)
+                                st.success(f"Daten für Person '{edit_firstname} {edit_lastname}' (ID: {selected_id_edit}) erfolgreich aktualisiert!")
+                                st.session_state.edit_person_mode = False # Bearbeitungsmodus verlassen
+                                st.rerun()
+
+                            except Exception as e:
+                                st.error(f"Fehler beim Aktualisieren der Personendaten: {e}")
+                        else:
+                            st.error("Bitte füllen Sie alle mit * markierten Felder aus.")
+            else:
+                st.info("Bitte wählen Sie eine Person zur Bearbeitung aus.")
+        st.markdown("---")
+
+
+    # ----- UI für die Anzeige bestehender Personen (wenn nicht im Add/Edit-Modus) -----
+    if not st.session_state.add_person_mode and not st.session_state.edit_person_mode:
         person_list = Person.load_person_data()
         person_ids = [p["id"] for p in person_list]
 
@@ -138,9 +260,9 @@ with tab1:
                 if selected_id_input != st.session_state.selected_person_id:
                     st.session_state.selected_person_id = selected_id_input
                     st.session_state.confirm_delete_id = None
-                    st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
-                    st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-                    st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
+                    st.session_state.show_recommendations = False
+                    st.session_state.current_recommendations = []
+                    st.session_state.analyzed_df = pd.DataFrame()
                     st.rerun()
 
             with col_delete_btn:
@@ -160,9 +282,9 @@ with tab1:
                             delete_person_from_db(st.session_state.confirm_delete_id)
                             st.success(f"Person mit ID {st.session_state.confirm_delete_id} wurde erfolgreich gelöscht.")
                             st.session_state.confirm_delete_id = None
-                            st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
-                            st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-                            st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
+                            st.session_state.show_recommendations = False
+                            st.session_state.current_recommendations = []
+                            st.session_state.analyzed_df = pd.DataFrame()
 
                             person_list_after_delete = Person.load_person_data()
                             if person_list_after_delete:
@@ -222,6 +344,7 @@ with tab1:
         else:
             st.info("Noch keine Personen vorhanden. Bitte fügen Sie eine neue Person hinzu.")
 
+
 with tab2:
     from healthdata import healthData
     st.header("📊 Gesundheitsdaten")
@@ -278,7 +401,6 @@ with tab2:
         st.info("Bitte wähle zuerst eine Versuchsperson im ersten Tab aus.")
 
 
-
 with tab3:
     st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 
@@ -302,7 +424,7 @@ with tab3:
                     if "time" in df.columns and "datetime" not in df.columns:
                         df["datetime"] = pd.to_datetime(df["time"], errors="coerce")
                         df.dropna(subset=["datetime"], inplace=True)
-                    elif "datetime" in df.columns:
+                    elif "datetime" in df.columns: # Falls die Spalte bereits "datetime" heißt
                         df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
                         df.dropna(subset=["datetime"], inplace=True)
                     else:
@@ -311,20 +433,21 @@ with tab3:
 
 
                     if df is not None and not df.empty:
+                        # Die Umbenennung hier ist entscheidend, da `AbnormalityChecker` die Kurznamen erwartet.
                         rename_cols = {
                             "resting heart rate (bpm)": "RHR",
                             "heart rate variability (ms)": "HRV",
                             "skin temp (celsius)": "Temp",
                             "sleep performance %": "Sleep"
                         }
-
+                        # Nur umbenennen, wenn die Spalte existiert
                         df.rename(columns={k: v for k, v in rename_cols.items() if k in df.columns}, inplace=True)
 
-                        expected_columns = ["RHR", "HRV", "Temp", "Sleep"]
+                        expected_columns = ["RHR", "HRV", "Temp", "Sleep", "datetime"] # 'datetime' hinzugefügt
                         missing = [col for col in expected_columns if col not in df.columns]
 
                         if missing:
-                            st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten für Abnormalitäten: {', '.join(missing)}. Bitte überprüfen Sie die Spaltennamen in der hochgeladenen CSV.")
+                            st.error(f"🚫 Fehlende Spalten in den Gesundheitsdaten für Abnormalitäten: {', '.join(missing)}. Bitte überprüfen Sie die Spaltennamen in der hochgeladenen CSV. Erwartet: 'time', 'resting heart rate (bpm)', 'heart rate variability (ms)', 'skin temp (celsius)', 'sleep performance %'.")
                             st.session_state.analyzed_df = pd.DataFrame() # Leeres DataFrame setzen
                         else:
                             # Füge Statusspalten hinzu
@@ -336,14 +459,14 @@ with tab3:
                             }.items():
                                 df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
 
-                            # Speichern des vorbereiteten DF in session_state, bevor es für Empfehlungen verwendet wird
-                            st.session_state.analyzed_df = df.copy() # HIER WICHTIGE ÄNDERUNG
+                            # Speichern des vorbereiteten DF in session_state
+                            st.session_state.analyzed_df = df.copy() 
 
                             st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
                             st.dataframe(df) # Zeigt das DataFrame mit den Statusspalten
 
                             # Plotting der Abnormalitäten über die Zeit
-                            plot_abnormalities_over_time(df, age, gender) # <<< HIER WICHTIGE ÄNDERUNG: age und gender übergeben
+                            plot_abnormalities_over_time(st.session_state.analyzed_df, age, gender) # Sicherstellen, dass das analysierte DF verwendet wird und age/gender übergeben werden
 
                             st.markdown("---")
                             st.subheader("💡 Deine personalisierten Empfehlungen")
@@ -360,7 +483,7 @@ with tab3:
                                         st.session_state.show_recommendations = True
                                 else:
                                     st.warning("Keine Daten zum Analysieren für Empfehlungen vorhanden. Bitte stellen Sie sicher, dass die Gesundheitsdaten korrekt geladen wurden.")
-                                    st.session_state.show_recommendations = False # Setze auf False, da keine Empfehlungen generiert werden konnten
+                                    st.session_state.show_recommendations = False 
 
                             if st.session_state.show_recommendations:
                                 with st.expander("Klicken Sie hier, um Ihre Empfehlungen zu sehen", expanded=True):

@@ -1,7 +1,7 @@
 import json
 import os
-import shutil # Importiere shutil für das Löschen von Verzeichnissen (falls nötig)
-from datetime import datetime # Neu hinzugefügt für das aktuelle Datum
+import shutil
+from datetime import datetime
 
 # Der Pfad zur JSON-Datei, in der die Personendaten gespeichert sind
 PERSON_DB_PATH = "data/person.json"
@@ -34,13 +34,11 @@ class Person:
             with open(PERSON_DB_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            # Handle empty or malformed JSON file
             print(f"Warning: {PERSON_DB_PATH} is empty or malformed. Returning empty list.")
             return []
         except Exception as e:
             print(f"Error loading person data from {PERSON_DB_PATH}: {e}")
             return []
-
 
     @staticmethod
     def save_person_data(data):
@@ -58,27 +56,34 @@ def generate_new_person_id(person_list):
         return 1
     return max(p["id"] for p in person_list) + 1
 
-def save_uploaded_file(uploaded_file, subfolder):
+def save_uploaded_file(uploaded_file, subfolder, existing_path=None):
     """
     Speichert eine hochgeladene Datei in einem Unterordner innerhalb von 'data/'.
     Gibt den Pfad der gespeicherten Datei zurück.
+    Wenn ein existing_path gegeben ist, wird versucht, diese Datei zu löschen.
     """
     if uploaded_file is None:
-        return None
+        return existing_path # Behalte den alten Pfad, wenn keine neue Datei hochgeladen wird
+
+    # Lösche die bestehende Datei, falls vorhanden und neu hochgeladen wird
+    if existing_path and os.path.exists(existing_path):
+        try:
+            os.remove(existing_path)
+            print(f"DEBUG: Alte Datei gelöscht: {existing_path}")
+        except OSError as e:
+            print(f"ERROR: Konnte alte Datei nicht löschen {existing_path}: {e}")
 
     upload_dir = os.path.join(DATA_DIR, subfolder)
     os.makedirs(upload_dir, exist_ok=True)
 
     file_path = os.path.join(upload_dir, uploaded_file.name)
     # Sicherstellen, dass der Dateiname eindeutig ist, um Überschreiben zu vermeiden
-    # Optional: Eine eindeutige ID oder Zeitstempel hinzufügen
     base, ext = os.path.splitext(uploaded_file.name)
     counter = 1
-    original_file_path = file_path
+    # original_file_path_attempt = file_path # Diese Variable wird nicht mehr benötigt
     while os.path.exists(file_path):
         file_path = os.path.join(upload_dir, f"{base}_{counter}{ext}")
         counter += 1
-
 
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
@@ -94,6 +99,22 @@ def add_new_person_to_db(new_person_data):
     person_list.append(new_person_data)
     Person.save_person_data(person_list)
 
+def update_person_in_db(updated_person_data):
+    """
+    Aktualisiert die Daten einer bestehenden Person in der JSON-Datenbank.
+    """
+    person_list = Person.load_person_data()
+    person_id_to_update = updated_person_data["id"]
+    found = False
+    for i, person in enumerate(person_list):
+        if person["id"] == person_id_to_update:
+            person_list[i] = updated_person_data
+            found = True
+            break
+    if found:
+        Person.save_person_data(person_list)
+    else:
+        raise ValueError(f"Person mit ID {person_id_to_update} nicht gefunden zum Aktualisieren.")
 
 def delete_person_from_db(person_id_to_delete):
     """
