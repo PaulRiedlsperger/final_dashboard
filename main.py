@@ -105,7 +105,7 @@ with tab1:
                             st.success(f"Person '{new_firstname} {new_lastname}' erfolgreich hinzugefügt und Daten gespeichert!")
                             st.session_state.add_person_mode = False
                             st.rerun()
-                        else: # Dies ist der else-Block, der den Fehler verursachen könnte, wenn er nicht richtig eingerückt ist
+                        else:
                             st.error("Fehler beim Speichern der physiologischen Daten.")
 
                     except Exception as e:
@@ -361,9 +361,13 @@ with tab3:
                             if st.button("Empfehlungen anzeigen", key="show_recommendations_btn"):
                                 with st.spinner("Analysiere Daten und generiere Empfehlungen..."):
                                     # Analysiere und generiere Empfehlungen basierend auf dem aktuellen df
-                                    st.session_state.current_recommendations = AbnormalityChecker.analyze_and_recommend(st.session_state.analyzed_df)
+                                    # HIER wird age und gender übergeben:
+                                    st.session_state.current_recommendations = AbnormalityChecker.analyze_and_recommend(
+                                            st.session_state.analyzed_df,
+                                            age, # 'age' kommt von person_obj.calculate_age() oben im Tab3
+                                            gender # 'gender' kommt von person_obj.gender oben im Tab3
+                                        )
                                     st.session_state.show_recommendations = True
-                                    # st.rerun() # Kein rerun hier, da der Expander den Inhalt dynamisch anzeigt
 
                             if st.session_state.show_recommendations:
                                 with st.expander("Klicken Sie hier, um Ihre Empfehlungen zu sehen", expanded=True):
