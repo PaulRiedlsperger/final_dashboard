@@ -222,10 +222,10 @@ with tab1:
         else:
             st.info("Noch keine Personen vorhanden. Bitte fügen Sie eine neue Person hinzu.")
 
-
 with tab2:
     from healthdata import healthData
     st.header("📊 Gesundheitsdaten")
+    
     if "selected_person_id" in st.session_state:
         person_list_tab2 = Person.load_person_data()
         selected_person_data_tab2 = next(
@@ -237,52 +237,46 @@ with tab2:
             if health_data_info and health_data_info[0].get("result_link"):
                 csv_file_path = health_data_info[0]["result_link"]
                 try:
-                    # Hier read_my_csv verwenden, da es um allgemeine Gesundheitsdaten geht
                     df = read_my_csv(csv_file_path)
-
-                    # Spaltennamen anpassen, falls sie anders sind als in der ursprünglichen CSV
-                    # Dies ist eine Annahme basierend auf vorherigen Kontexten.
-                    # Wenn deine CSV direkt die richtigen Spaltennamen hat, kann dies entfallen.
                     df.rename(columns={
-                        "resting heart rate (bpm)": "RHR",
-                        "heart rate variability (ms)": "HRV",
-                        "skin temp (celsius)": "Temp",
-                        "sleep performance %": "Sleep"
+                        "resting heart rate (bpm)": "Resting heart rate (bpm)",
+                        "heart rate variability (ms)": "Heart rate variability (ms)",
+                        "skin temp (celsius)": "Skin temp (celsius)",
+                        "sleep performance %": "Sleep performance %"
                     }, inplace=True)
-
 
                     avg_rhr = healthData.get_average_Resting_heart_rate(df)
                     avg_hrv = healthData.get_average_Heart_rate_variability(df)
                     avg_temp = healthData.get_average_Skin_temp_celsius(df)
                     avg_sleep = healthData.get_average_Sleep_performance_percent(df)
 
-                    col1, col2 = st.columns(2)
+                    st.subheader("📈 Durchschnittliche Gesundheitswerte")
+                    col1, col2 = st.columns([2, 2])
                     with col1:
                         st.metric("🫀 Ruheherzfrequenz (bpm)", f"{avg_rhr:.1f}")
+                        st.metric("💓 Herzfrequenz-Variabilität (ms)", f"{avg_hrv:.1f}")
                         st.metric("🌡️ Hauttemperatur (°C)", f"{avg_temp:.1f}")
                     with col2:
-                        st.metric("💓 Herzfrequenz-Variabilität (ms)", f"{avg_hrv:.1f}")
-                        st.metric("😴 Schlafscore (%)", f"{avg_sleep:.1f}")
+                        pie_fig = healthData.plot_sleep_pie(avg_sleep)
+                        st.plotly_chart(pie_fig, use_container_width=True)
 
                     st.divider()
-                    st.subheader("📈 Verlauf der Gesundheitswerte")
+                    st.subheader("📉 Verlauf aller Gesundheitsparameter")
+                    st.plotly_chart(healthData.plot_all(df), use_container_width=True)
 
-                    st.plotly_chart(healthData.plot_RHR(df), use_container_width=True)
-                    st.plotly_chart(healthData.plot_HRV(df), use_container_width=True)
-                    st.plotly_chart(healthData.plot_skin_temp(df), use_container_width=True)
-                    st.plotly_chart(healthData.plot_sleep_performance(df), use_container_width=True)
                 except FileNotFoundError:
-                    st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {csv_file_path}")
+                    st.error(f"Die CSV-Datei wurde nicht gefunden: {csv_file_path}")
                 except KeyError as e:
-                    st.error(f"Fehlende Spalte in der Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen.")
+                    st.error(f"Fehlende Spalte in der CSV: {e}")
                 except Exception as e:
-                    st.error(f"Fehler beim Laden oder Verarbeiten der Gesundheitsdaten: {e}")
+                    st.error(f"Fehler beim Verarbeiten der Daten: {e}")
             else:
                 st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
         else:
-            st.info("Keine Person mit dieser ID gefunden, oder Daten unvollständig.")
+            st.info("Keine gültige Person gefunden.")
     else:
-        st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
+        st.info("Bitte wähle zuerst eine Versuchsperson im ersten Tab aus.")
+
 
 
 with tab3:
