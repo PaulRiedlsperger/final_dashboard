@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 from itertools import groupby
 import unicodedata # Bleibt, da es in dem von dir gegebenen Code war
-
+from loaddata import read_my_csv_2 # Importiere die angepasste Funktion zum Einlesen der CSV-Datei
 
 class AbnormalityChecker:
 
@@ -97,9 +97,9 @@ class AbnormalityChecker:
         # Empfehlung für den Gesamtstatus
         if total_problem_days == 0:
             recommendations.append(("✅", "Alle gemessenen Parameter sind in den letzten 30 Tagen im normalen Bereich. Hervorragend! Behalten Sie Ihre Routinen bei."))
-        elif total_problem_days < len(df_recent) * 0.2: # Weniger als 20% der Tage mit Problemen
+        elif total_problem_days < len(df_recent) * 0.05: # Weniger als 20% der Tage mit Problemen
             recommendations.append(("👍", "Ihre Daten zeigen größtenteils gute Werte mit nur wenigen kleineren Abweichungen. Weiter so!"))
-        elif total_problem_days > len(df_recent) * 0.5: # Mehr als 50% der Tage mit Problemen
+        elif total_problem_days > len(df_recent) * 0.1: # Mehr als 50% der Tage mit Problemen
              recommendations.append(("🚨", "**Achtung: Erhebliche Abweichungen in Ihren Gesundheitsdaten.**\n"
                                      "Ihre Daten der letzten 30 Tage zeigen wiederholt signifikante Abweichungen in mehreren Bereichen. "
                                      "Es ist ratsam, einen Arzt zu konsultieren oder Ihre Lebensweise (Ernährung, Schlaf, Stress) genau zu überprüfen. "
