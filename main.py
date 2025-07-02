@@ -18,8 +18,6 @@ from person import add_new_person_to_db, save_uploaded_file, delete_person_from_
 st.set_page_config(layout="wide")
 
 
-
-
 # Initialisiere session_state, falls nicht vorhanden
 if 'add_person_mode' not in st.session_state:
     st.session_state.add_person_mode = False
@@ -30,8 +28,7 @@ if 'show_recommendations' not in st.session_state: # Zustand für Empfehlungsanz
 if 'current_recommendations' not in st.session_state: # Speichert die generierten Empfehlungen
     st.session_state.current_recommendations = []
 if 'analyzed_df' not in st.session_state: # Speichert das analysierte DataFrame für Abnormalitäten
-    st.session_state.analyzed_df = None
-
+    st.session_state.analyzed_df = pd.DataFrame() # Initialisiere als leeres DataFrame
 
 tab1, tab2, tab3 = st.tabs(["Versuchsperson", "Gesundheitsdaten", "Abnormalitäten"])
 
@@ -47,7 +44,7 @@ with tab1:
             st.session_state.confirm_delete_id = None # Löschbestätigung zurücksetzen
             st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
             st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-            st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
+            st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
             st.rerun() # Wichtig, um den Zustand sofort zu aktual
 
     with col_back_btn:
@@ -143,7 +140,7 @@ with tab1:
                     st.session_state.confirm_delete_id = None
                     st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
                     st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-                    st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
+                    st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
                     st.rerun()
 
             with col_delete_btn:
@@ -165,7 +162,7 @@ with tab1:
                             st.session_state.confirm_delete_id = None
                             st.session_state.show_recommendations = False # Empfehlungen zurücksetzen
                             st.session_state.current_recommendations = [] # Empfehlungen zurücksetzen
-                            st.session_state.analyzed_df = None # Analysierte Daten zurücksetzen
+                            st.session_state.analyzed_df = pd.DataFrame() # Analysierte Daten zurücksetzen
 
                             person_list_after_delete = Person.load_person_data()
                             if person_list_after_delete:
@@ -299,6 +296,8 @@ with tab3:
 
         if selected_person_data_tab3:
             person_obj = Person(selected_person_data_tab3)
+            age = person_obj.calculate_age() # Alter berechnen
+            gender = person_obj.gender     # Geschlecht erhalten
 
             if hasattr(person_obj, 'healthdata_path') and person_obj.healthdata_path:
                 try:
@@ -316,9 +315,6 @@ with tab3:
                         st.error("Fehler: Weder 'time' noch 'datetime' Spalte im CSV gefunden. Kann Zeitverlauf nicht analysieren.")
                         df = pd.DataFrame() # Leeres DataFrame, um weitere Fehler zu vermeiden
 
-
-                    age = person_obj.calculate_age()
-                    gender = person_obj.gender
 
                     if df is not None and not df.empty:
                         rename_cols = {
@@ -346,28 +342,31 @@ with tab3:
                             }.items():
                                 df[param + "_status"] = df[param].apply(lambda v: check_func(v, age, gender))
 
+                            # Speichern des vorbereiteten DF in session_state, bevor es für Empfehlungen verwendet wird
+                            st.session_state.analyzed_df = df.copy() # HIER WICHTIGE ÄNDERUNG
+
                             st.subheader("Analyse abgeschlossen ✅ – bereit zur Visualisierung")
                             st.dataframe(df) # Zeigt das DataFrame mit den Statusspalten
 
                             # Plotting der Abnormalitäten über die Zeit
-                            plot_abnormalities_over_time(df)
-
-                            # Speichere das analysierte DF im Session State für Empfehlungen
-                            st.session_state.analyzed_df = df
+                            plot_abnormalities_over_time(df, age, gender) # <<< HIER WICHTIGE ÄNDERUNG: age und gender übergeben
 
                             st.markdown("---")
                             st.subheader("💡 Deine personalisierten Empfehlungen")
 
+                            # Der Button sollte immer sichtbar sein, aber die Logik dahinter muss das analyzed_df überprüfen
                             if st.button("Empfehlungen anzeigen", key="show_recommendations_btn"):
-                                with st.spinner("Analysiere Daten und generiere Empfehlungen..."):
-                                    # Analysiere und generiere Empfehlungen basierend auf dem aktuellen df
-                                    # HIER wird age und gender übergeben:
-                                    st.session_state.current_recommendations = AbnormalityChecker.analyze_and_recommend(
-                                            st.session_state.analyzed_df,
-                                            age, # 'age' kommt von person_obj.calculate_age() oben im Tab3
-                                            gender # 'gender' kommt von person_obj.gender oben im Tab3
-                                        )
-                                    st.session_state.show_recommendations = True
+                                if not st.session_state.analyzed_df.empty:
+                                    with st.spinner("Analysiere Daten und generiere Empfehlungen..."):
+                                        st.session_state.current_recommendations = AbnormalityChecker.analyze_and_recommend(
+                                                st.session_state.analyzed_df,
+                                                age,
+                                                gender
+                                            )
+                                        st.session_state.show_recommendations = True
+                                else:
+                                    st.warning("Keine Daten zum Analysieren für Empfehlungen vorhanden. Bitte stellen Sie sicher, dass die Gesundheitsdaten korrekt geladen wurden.")
+                                    st.session_state.show_recommendations = False # Setze auf False, da keine Empfehlungen generiert werden konnten
 
                             if st.session_state.show_recommendations:
                                 with st.expander("Klicken Sie hier, um Ihre Empfehlungen zu sehen", expanded=True):
@@ -378,15 +377,22 @@ with tab3:
                                         st.info("Es konnten keine spezifischen Empfehlungen generiert werden.")
                     else:
                         st.warning("Die geladenen Gesundheitsdaten sind leer oder konnten nicht verarbeitet werden.")
+                        st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
                 except FileNotFoundError:
                     st.error(f"Die CSV-Datei für die Gesundheitsdaten wurde nicht gefunden: {person_obj.healthdata_path}")
+                    st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
                 except KeyError as e:
                     st.error(f"Fehlende Spalte oder ungültiges Format in den Gesundheitsdaten-CSV: {e}. Bitte überprüfen Sie die Spaltennamen und das Format.")
+                    st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
                 except Exception as e:
                     st.error(f"Fehler beim Laden oder Verarbeiten der Gesundheitsdaten für Abnormalitäten: {e}")
+                    st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
             else:
                 st.info("Für diese Person sind keine Gesundheitsdaten verknüpft.")
+                st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
         else:
             st.warning("Keine gültige Person mit dieser ID gefunden.")
+            st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
     else:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson in Tab 1 aus.")
+        st.session_state.analyzed_df = pd.DataFrame() # Sicherstellen, dass es ein leeres DF ist
