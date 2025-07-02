@@ -17,7 +17,12 @@ Diese Streamlit-Anwendung dient zur Visualisierung, Analyse und Bewertung physio
 
 ## Zuküntige Verbesserungs Punkte
 
--gepublishte Seite 
+-gepublishte Seite optimieren! (https://finaldashboard-fsd4t3us5dfmwbkvqgxftn.streamlit.app/)
+  -aktuelle Fehler mit den Fotos und csv Datein die lokal gespeichert sind. 
+-Abnormalitäten per Mail an die jenineg Person schicken
+-Grafische verbesserungen
+
+
 
 
 ## ▶️ Starten der App
