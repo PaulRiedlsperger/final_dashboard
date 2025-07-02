@@ -282,8 +282,6 @@ with tab2:
         st.info("Bitte wählen Sie zuerst eine Versuchsperson aus dem 'Versuchsperson'-Tab aus.")
 
 
-
-
 with tab3:
         st.header("⚠️ Abnormalitäten über den Zeitverlauf")
 

@@ -14,7 +14,15 @@ Diese Streamlit-Anwendung dient zur Visualisierung, Analyse und Bewertung physio
 - ⚠️ **Abnormalitäten**: Automatische Bewertung der Parameter im Vergleich zu alters- und geschlechtsspezifischen Normwerten mit farblicher Ampel-Logik (Normal / Auffällig).
 - 🧠 **Datenbasis**: Gesundheitsdaten werden individuell pro Person aus CSV-Dateien geladen.
 
+
+## Zuküntige Verbesserungs Punkte
+
+-gepublishte Seite 
+
+
 ## ▶️ Starten der App
 
 ```bash
 streamlit run main.py
+
+
