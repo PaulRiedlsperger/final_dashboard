@@ -5,12 +5,12 @@
         "firstname": "jakob",
         "lastname": "weninger",
         "gender": "male",
-        "picture_path": "data\\pictures\\Scan_20200903 (4).png",
+        "picture_path": "data/pictures/Scan_20200903 (4).png",
         "health_data": [
             {
                 "id": 1.1,
                 "date": "02.07.2025",
-                "result_link": "data\\physiological_cycles\\physiological_cycles (2)_2.csv"
+                "result_link": "data/physiological_cycles/physiological_cycles (2)_2.csv"
             }
         ]
     },
@@ -19,12 +19,12 @@
         "firstname": "Paul ",
         "lastname": "Riedlsperger",
         "gender": "male",
-        "picture_path": "data\\pictures\\Paul Riedlsperger.jpg",
+        "picture_path": "data/pictures/Paul Riedlsperger.jpg",
         "health_data": [
             {
                 "id": 1.1,
                 "date": "01.07.2025",
-                "result_link": "data\\physiological_cycles\\physiological_cycles.csv"
+                "result_link": "data/physiological_cycles/physiological_cycles.csv"
             }
         ],
         "id": 2
@@ -34,12 +34,12 @@
         "firstname": "Lena",
         "lastname": "Kurzthaler",
         "gender": "female",
-        "picture_path": "data\\pictures\\Lena_1.jpg",
+        "picture_path": "data/pictures/Lena_1.jpg",
         "health_data": [
             {
                 "id": 1.1,
                 "date": "01.07.2025",
-                "result_link": "data\\physiological_cycles\\physiologische_zyklen_Lena.csv"
+                "result_link": "data/physiological_cycles/physiologische_zyklen_Lena.csv"
             }
         ],
         "id": 3
@@ -49,12 +49,12 @@
         "firstname": "Hanz",
         "lastname": "Krank",
         "gender": "male",
-        "picture_path": "data\\pictures\\Screenshot 2024-12-02 173639.png",
+        "picture_path": "data/pictures/Screenshot 2024-12-02 173639.png",
         "health_data": [
             {
                 "id": 1.1,
                 "date": "02.07.2025",
-                "result_link": "data\\physiological_cycles\\physiologische_zyklen_test2.csv"
+                "result_link": "data/physiological_cycles/physiologische_zyklen_test2.csv"
             }
         ],
         "id": 4

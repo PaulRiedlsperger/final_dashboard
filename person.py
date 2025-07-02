@@ -14,11 +14,32 @@ class Person:
         self.firstname = data.get("firstname")
         self.lastname = data.get("lastname")
         self.gender = data.get("gender")
-        self.picture_path = data.get("picture_path")
-        self.health_data = data.get("health_data", [])
+        # Pfade beim Initialisieren normalisieren
+        self.picture_path = self.normalize_path(data.get("picture_path"))
+        self.health_data = [self.normalize_health_entry(entry) for entry in data.get("health_data", [])]
 
         # Spezieller Getter für den Pfad der Gesundheitsdaten-CSV
         self.healthdata_path = self.get_healthdata_csv_path()
+
+    def normalize_path(self, path):
+        """
+        Normalisiert einen Dateipfad, indem Backslashes durch Forward-Slashes ersetzt
+        und der Pfad dann mit os.path.normpath bereinigt wird.
+        """
+        if path:
+            # Ersetze Backslashes durch Forward-Slashes
+            normalized_path = path.replace("\\", "/")
+            # os.path.normpath bereinigt den Pfad (z.B. entfernt unnötige '.' oder '..')
+            return os.path.normpath(normalized_path)
+        return path
+
+    def normalize_health_entry(self, entry):
+        """
+        Normalisiert den result_link innerhalb eines health_data Eintrags.
+        """
+        if entry and "result_link" in entry:
+            entry["result_link"] = self.normalize_path(entry["result_link"])
+        return entry
 
     def get_healthdata_csv_path(self):
         # Annahme: Es gibt immer nur einen Eintrag unter "health_data" oder der erste ist der relevante
@@ -68,10 +89,15 @@ def save_uploaded_file(uploaded_file, subfolder, existing_path=None):
     # Lösche die bestehende Datei, falls vorhanden und neu hochgeladen wird
     if existing_path and os.path.exists(existing_path):
         try:
-            os.remove(existing_path)
-            print(f"DEBUG: Alte Datei gelöscht: {existing_path}")
+            # WICHTIG: Normalisiere den existing_path, bevor du ihn zu löschen versuchst
+            normalized_existing_path = Person().normalize_path(existing_path)
+            if os.path.exists(normalized_existing_path): # Zusätzliche Prüfung
+                os.remove(normalized_existing_path)
+                print(f"DEBUG: Alte Datei gelöscht: {normalized_existing_path}")
+            else:
+                print(f"DEBUG: Alte Datei nicht gefunden zum Löschen (Pfad: {normalized_existing_path}), eventuell schon gelöscht oder Pfadfehler.")
         except OSError as e:
-            print(f"ERROR: Konnte alte Datei nicht löschen {existing_path}: {e}")
+            print(f"ERROR: Konnte alte Datei nicht löschen {normalized_existing_path}: {e}")
 
     upload_dir = os.path.join(DATA_DIR, subfolder)
     os.makedirs(upload_dir, exist_ok=True)
@@ -80,14 +106,13 @@ def save_uploaded_file(uploaded_file, subfolder, existing_path=None):
     # Sicherstellen, dass der Dateiname eindeutig ist, um Überschreiben zu vermeiden
     base, ext = os.path.splitext(uploaded_file.name)
     counter = 1
-    # original_file_path_attempt = file_path # Diese Variable wird nicht mehr benötigt
     while os.path.exists(file_path):
         file_path = os.path.join(upload_dir, f"{base}_{counter}{ext}")
         counter += 1
 
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-    return file_path
+    return file_path # os.path.join gibt bereits den korrekten Pfad zurück
 
 def add_new_person_to_db(new_person_data):
     """
@@ -126,16 +151,17 @@ def delete_person_from_db(person_id_to_delete):
 
     if person_to_delete:
         # Lösche die zugehörigen Dateien
-        if person_to_delete.get("picture_path") and os.path.exists(person_to_delete["picture_path"]):
+        picture_path_to_delete = Person().normalize_path(person_to_delete.get("picture_path"))
+        if picture_path_to_delete and os.path.exists(picture_path_to_delete):
             try:
-                os.remove(person_to_delete["picture_path"])
-                print(f"DEBUG: Bild gelöscht: {person_to_delete['picture_path']}")
+                os.remove(picture_path_to_delete)
+                print(f"DEBUG: Bild gelöscht: {picture_path_to_delete}")
             except OSError as e:
-                print(f"ERROR: Konnte Bild nicht löschen {person_to_delete['picture_path']}: {e}")
+                print(f"ERROR: Konnte Bild nicht löschen {picture_path_to_delete}: {e}")
 
         # Annahme: Gesundheitsdaten sind eine Liste, und der Pfad ist in "result_link"
         for health_entry in person_to_delete.get("health_data", []):
-            csv_path = health_entry.get("result_link")
+            csv_path = Person().normalize_path(health_entry.get("result_link"))
             if csv_path and os.path.exists(csv_path):
                 try:
                     os.remove(csv_path)
