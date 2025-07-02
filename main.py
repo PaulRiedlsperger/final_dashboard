@@ -17,50 +17,7 @@ from person import add_new_person_to_db, save_uploaded_file, delete_person_from_
 # Set page config (optional, aber gut für Layout)
 st.set_page_config(layout="wide")
 
-# Benutzerdefiniertes CSS für komplett schwarzen Hintergrund
-st.markdown("""
-    <style>
-        html, body, .stApp {
-            background-color: #000000;
-            color: white;
-        }
-        .stMarkdown, .stText, .stDataFrame, .css-1r6slb0, .css-1v0mbdj, .st-bz, .st-cq {
-            color: white !important;
-        }
-        .stButton>button, .stSelectbox, .stNumberInput, .stFileUploader, .stTextInput {
-            background-color: #222222;
-            color: white;
-            border: 1px solid #444444; /* Optional: fügt einen leichten Rand hinzu */
-        }
-        /* Verbessert die Sichtbarkeit von Text in Text Inputs */
-        .stTextInput>div>div>input {
-            color: white !important;
-        }
-        /* Verbessert die Sichtbarkeit von Optionen in Selectboxes */
-        .stSelectbox>div>div>div {
-            color: white !important;
-        }
-        /* Allgemeiner Text in Labels etc. */
-        label, .css-1fv8s86 {
-            color: white !important;
-        }
-        /* Anpassung für Tab-Header */
-        .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-            font-size: 1.2rem; /* Größere Schrift */
-            color: white; /* Weiße Schrift für Tabs */
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 24px; /* Abstand zwischen Tabs */
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #333333; /* Hintergrund für ausgewählten Tab */
-            border-radius: 5px; /* Abgerundete Ecken für ausgewählten Tab */
-        }
-        .stTabs [data-baseweb="tab"] {
-            color: #AAAAAA; /* Farbe für nicht ausgewählte Tabs */
-        }
-    </style>
-""", unsafe_allow_html=True)
+
 
 
 # Initialisiere session_state, falls nicht vorhanden
