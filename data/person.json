@@ -45,18 +45,18 @@
         "id": 3
     },
     {
+        "id": 4,
         "date_of_birth": 1993,
         "firstname": "Hanz",
         "lastname": "Krank",
         "gender": "male",
-        "picture_path": "data/pictures/Screenshot 2024-12-02 173639.png",
+        "picture_path": "data\\pictures\\WhatsApp Image 2025-05-25 at 21.02.47 (1)_1.jpeg",
         "health_data": [
             {
                 "id": 1.1,
                 "date": "02.07.2025",
                 "result_link": "data/physiological_cycles/physiologische_zyklen_test2.csv"
             }
-        ],
-        "id": 4
+        ]
     }
 ]

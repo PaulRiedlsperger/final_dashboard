@@ -15,13 +15,14 @@ class Person:
         self.lastname = data.get("lastname")
         self.gender = data.get("gender")
         # Pfade beim Initialisieren normalisieren
-        self.picture_path = self.normalize_path(data.get("picture_path"))
+        self.picture_path = Person.normalize_path(data.get("picture_path")) # Call as staticmethod
         self.health_data = [self.normalize_health_entry(entry) for entry in data.get("health_data", [])]
 
         # Spezieller Getter für den Pfad der Gesundheitsdaten-CSV
         self.healthdata_path = self.get_healthdata_csv_path()
 
-    def normalize_path(self, path):
+    @staticmethod # Made this a staticmethod
+    def normalize_path(path):
         """
         Normalisiert einen Dateipfad, indem Backslashes durch Forward-Slashes ersetzt
         und der Pfad dann mit os.path.normpath bereinigt wird.
@@ -38,7 +39,7 @@ class Person:
         Normalisiert den result_link innerhalb eines health_data Eintrags.
         """
         if entry and "result_link" in entry:
-            entry["result_link"] = self.normalize_path(entry["result_link"])
+            entry["result_link"] = Person.normalize_path(entry["result_link"]) # Call as staticmethod
         return entry
 
     def get_healthdata_csv_path(self):
@@ -90,7 +91,7 @@ def save_uploaded_file(uploaded_file, subfolder, existing_path=None):
     if existing_path and os.path.exists(existing_path):
         try:
             # WICHTIG: Normalisiere den existing_path, bevor du ihn zu löschen versuchst
-            normalized_existing_path = Person().normalize_path(existing_path)
+            normalized_existing_path = Person.normalize_path(existing_path) # Call as staticmethod
             if os.path.exists(normalized_existing_path): # Zusätzliche Prüfung
                 os.remove(normalized_existing_path)
                 print(f"DEBUG: Alte Datei gelöscht: {normalized_existing_path}")
@@ -151,7 +152,7 @@ def delete_person_from_db(person_id_to_delete):
 
     if person_to_delete:
         # Lösche die zugehörigen Dateien
-        picture_path_to_delete = Person().normalize_path(person_to_delete.get("picture_path"))
+        picture_path_to_delete = Person.normalize_path(person_to_delete.get("picture_path")) # Call as staticmethod
         if picture_path_to_delete and os.path.exists(picture_path_to_delete):
             try:
                 os.remove(picture_path_to_delete)
@@ -161,7 +162,7 @@ def delete_person_from_db(person_id_to_delete):
 
         # Annahme: Gesundheitsdaten sind eine Liste, und der Pfad ist in "result_link"
         for health_entry in person_to_delete.get("health_data", []):
-            csv_path = Person().normalize_path(health_entry.get("result_link"))
+            csv_path = Person.normalize_path(health_entry.get("result_link")) # Call as staticmethod
             if csv_path and os.path.exists(csv_path):
                 try:
                     os.remove(csv_path)
